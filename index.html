@@ -23,9 +23,12 @@
   body{
     margin:0;
     min-height:100vh;
-    background:#fff;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,0.035) 0, transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(255,255,255,0.03) 0, transparent 40%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
     font-family:'Space Grotesk', sans-serif;
-    color:var(--bg-2);
+    color:var(--chalk);
     padding: 48px 20px;
   }
   .wrap{ max-width: 880px; margin: 0 auto; }
@@ -39,7 +42,7 @@
     transform: rotate(-0.5deg);
   }
   .sub{
-    color:#4a5d50;
+    color:var(--chalk-dim);
     font-size:1rem;
     max-width:56ch;
     line-height:1.6;
@@ -53,7 +56,7 @@
     font-size:1.7rem;
     margin:0 0 16px;
     padding-bottom:8px;
-    border-bottom:1.5px dashed rgba(27,51,35,0.3);
+    border-bottom:1.5px dashed rgba(243,239,227,0.25);
   }
 
   .grid{
@@ -133,21 +136,21 @@
   .card:hover .play::after{ transform: translateX(3px); }
 
   .placeholder{
-    border: 1.5px dashed rgba(27,51,35,0.3);
+    border: 1.5px dashed rgba(243,239,227,0.25);
     border-radius: 18px;
     padding: 22px 20px;
     display:flex;
     align-items:center;
     justify-content:center;
     text-align:center;
-    color: #4a5d50;
+    color: var(--chalk-dim);
     font-size:.9rem;
     min-height: 140px;
   }
 
   footer{
     margin-top: 44px;
-    color: #4a5d50;
+    color: var(--chalk-dim);
     font-size:.82rem;
     text-align:center;
   }
