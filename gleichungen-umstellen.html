@@ -315,7 +315,7 @@ function nextStep(s,mode){
   if(!isZ(c)){
     if(!isZ(d))return{id:'cr',op:elim('c',d,mode),to:{a:ZERO,b:fsub(b,d),c,d:ZERO}};
     if(!feq(c,ONE))return{id:'dr',op:opDiv(c,mode),to:{a:ZERO,b:fdiv(b,c),c:ONE,d:ZERO}};
-    return{id:'sw',op:{k:'txt',t:'Seiten tauschen'},to:{a:ONE,b:ZERO,c:ZERO,d:b}};
+    return null;
   }
   return undefined;
 }
@@ -338,7 +338,7 @@ function walk(st,mode,corrupt){
     cur=to;
     if(++n>8)return null;
   }
-  return{rows,x:cur.d,err};
+  return{rows,x:isZ(cur.a)?cur.b:cur.d,err};
 }
 
 function expandLabel(all){
@@ -539,9 +539,11 @@ function stepsHtml(sol,opt){
   }).join('')+'</div>';
   return h;
 }
+const lsg=(x,mode)=>`L = {${numH(x,mode)}}`;
 function extrasHtml(sol,noProbe){
   let h='';
   if(sol.details&&sol.details.length)h+=`<div class="nr"><b>Nebenrechnung:</b>${sol.details.map(d=>`<div>${d}</div>`).join('')}</div>`;
+  h+=`<p><b>Lösungsmenge:</b> ${lsg(sol.x,sol.mode)}</p>`;
   if(noProbe)return h;
   h+=`<p class="probe"><b>Probe:</b> Setzt man x = ${numH(sol.x,sol.mode)} ein, ergibt sich links ${numH(sol.lv,sol.mode)} und rechts ${numH(sol.rv,sol.mode)} – die Gleichung stimmt.</p>`;
   return h;
@@ -555,7 +557,7 @@ function task(station,label,q,ans,way,mode){return{station,label,q,ans:ansBox(an
 function eqTask(station,label,b,mode,hint){
   const sol=b.sol;
   return task(station,label,`<div class="expr">${eqLine(sol)}</div>`,
-    `<div class="res">x = ${numH(sol.x,mode)}</div>`,
+    `<div class="res">x = ${numH(sol.x,mode)}</div><div class="res">${lsg(sol.x,mode)}</div>`,
     (hint?`<p>${hint}</p>`:'')+stepsHtml(sol)+extrasHtml(sol),mode);
 }
 
@@ -645,7 +647,7 @@ function gWaage(L){
   if(t==='auf'){
     return task('waage','Die Waage ist im Gleichgewicht. Alle x-Blöcke wiegen gleich viel, die Zahlen geben das Gewicht der Wägestücke an.',
       wfig(l,r,0)+`<div class="qlabel" style="margin-top:6px">a) Stelle die Gleichung auf. &nbsp; b) Wie schwer ist ein x-Block?</div>`,
-      `<div class="res">${eqLine(sol)}</div><div class="res">x = ${sol.x.n}</div>`,
+      `<div class="res">${eqLine(sol)}</div><div class="res">x = ${sol.x.n}</div><div class="res">${lsg(sol.x,"int")}</div>`,
       intro+stepsHtml(sol,{words:true})+extrasHtml(sol),'int');
   }
   if(t==='weg'){
@@ -828,7 +830,7 @@ function gSach(L){
     const xs=numH(sol.x,s.mode),xn=sol.x.d===1?sol.x.n:null;
     const sentence=s.sentence(xn===null?xs:xn);
     const way=`<div class="sachl"><p><b>1. Variable festlegen:</b> ${s.defn}</p><p><b>2. Gleichung aufstellen:</b> ${s.setup}</p><div class="expr sm">${eqLine(sol)}</div><p><b>3. Gleichung lösen:</b></p>${stepsHtml(sol)}${extrasHtml(sol,true)}<p><b>4. Probe am Text:</b> ${s.check(xn===null?xs:xn)} ✓</p><p><b>5. Antwortsatz:</b> ${sentence}</p></div>`;
-    return task('sach','Stelle eine Gleichung auf und löse sie.',`<p class="story">${s.text}</p>`,`<div class="res" style="font-size:clamp(1.1rem,3.4vw,1.6rem)">${sentence}</div><p>Gleichung: ${eqLine(sol)}</p>`,way,s.mode);
+    return task('sach','Stelle eine Gleichung auf und löse sie.',`<p class="story">${s.text}</p>`,`<div class="res" style="font-size:clamp(1.1rem,3.4vw,1.6rem)">${sentence}</div><p>Gleichung: ${eqLine(sol)} &nbsp;&middot;&nbsp; ${lsg(sol.x,s.mode)}</p>`,way,s.mode);
   }
   return null;
 }
@@ -888,7 +890,7 @@ function gUmf(L,mode){
     });
     if(opts.length<4)return null;
     const sh=shuffle(opts),LB=['A','B','C','D'],gi=sh.indexOf(good);
-    return task('umf','Eine Gleichung wurde durch <b>eine</b> Äquivalenzumformung verändert. Welche?',
+    return task('umf','Gib die genutzte Äquivalenzumformung an.',
       `<div class="pair"><div class="expr"><span class="lbl">I</span>${r0.Ls} = ${r0.Rs}</div><div class="expr"><span class="lbl">II</span>${r1.Ls} = ${r1.Rs}</div></div><ol class="mcl" style="list-style:none">${sh.map((o,k)=>`<li><b>${LB[k]})</b> ${o}</li>`).join('')}</ol>`,
       `<div class="res" style="font-size:clamp(1.1rem,3.4vw,1.6rem)">${LB[gi]}) ${good}</div>`,
       `<p>Wende die richtige Umformung auf <b>beide</b> Seiten von I an:</p><p>Linke Seite: ${applyStr(r0.Ls,op)} = ${r1.Ls}<br>Rechte Seite: ${applyStr(r0.Rs,op)} = ${r1.Rs}</p><p>Das ergibt genau Gleichung II. Bei den anderen Antworten würde auf einer Seite etwas anderes herauskommen.</p>`,mode);
@@ -922,7 +924,7 @@ function gUmf(L,mode){
   const goodSol=sol;
   const nm=pick(['Tim','Lena','Mia','Jonas','Sophie','Ben']);
   const ansT=wrong?`<div class="res" style="font-size:clamp(1.1rem,3.4vw,1.6rem)">Ja, in <b>Zeile ${errInfo.row+1}</b> steckt ein Fehler.</div><p>${errInfo.msg}</p><p>Richtig müsste Zeile ${errInfo.row+1} so lauten: <b>${mkRow(errInfo.good,mode).Ls} = ${mkRow(errInfo.good,mode).Rs}</b></p>`
-    :`<div class="res" style="font-size:clamp(1.1rem,3.4vw,1.6rem)">Nein, ${nm} hat <b>richtig</b> gerechnet: x = ${numH(sol.x,mode)}.</div>`;
+    :`<div class="res" style="font-size:clamp(1.1rem,3.4vw,1.6rem)">Nein, ${nm} hat <b>richtig</b> gerechnet: x = ${numH(sol.x,mode)}, ${lsg(sol.x,mode)}.</div>`;
   return task('umf',`${nm} hat die Gleichung gelöst. Prüfe die Rechnung Zeile für Zeile: Stimmt alles? Wenn nicht: Wo steckt der Fehler und was wurde falsch gemacht?`,
     `<div class="expr sm">${stepsHtml(shown,{num:true})}</div>`,ansT,
     `<p>Richtiger Rechenweg:</p>${stepsHtml(goodSol)}${extrasHtml(goodSol)}`,mode);
