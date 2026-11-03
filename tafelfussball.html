@@ -125,6 +125,45 @@
     align-self:center; font-family:'Kalam', cursive; font-weight:700; font-size: clamp(1.4rem,3vh,2rem); color:var(--chalk-dim);
   }
 
+  /* --- Quiz-Modus --- */
+  .quiz-toggle{
+    margin-left:auto;
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:clamp(.75rem,1.5vh,.9rem); color:var(--chalk-dim);
+    cursor:pointer; user-select:none;
+  }
+  .quiz-toggle input{ accent-color: var(--yellow); width:16px; height:16px; margin:0; cursor:pointer; }
+  .quiz-toggle:hover{ color:var(--chalk); }
+  .quiz{
+    position:relative; z-index:1;
+    display:flex; align-items:center; gap: clamp(10px,1.6vw,18px);
+    background: rgba(255,255,255,0.05);
+    border:1.5px dashed rgba(232,194,91,.55);
+    border-radius:12px;
+    padding: clamp(8px,1.4vh,12px) clamp(12px,1.6vw,16px);
+    margin-bottom: clamp(8px, 1.6vh, 16px);
+  }
+  .quiz[hidden]{ display:none; }
+  .quiz-body{ flex:1; min-width:0; }
+  .quiz-tag{
+    display:inline-block; font-size:.66rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:#2B2110; background:var(--yellow); border-radius:999px; padding:1px 8px; margin-bottom:4px;
+  }
+  .quiz-tag.s{ background:var(--green); }
+  .quiz-tag.a{ background:var(--blue); }
+  .quiz-q{
+    font-family:'Kalam', cursive; font-weight:700;
+    font-size: clamp(1rem, 2.6vh, 1.5rem); line-height:1.25;
+  }
+  .quiz-a{
+    font-family:'Kalam', cursive; font-weight:700;
+    font-size: clamp(.95rem, 2.3vh, 1.35rem); line-height:1.25;
+    color:var(--yellow); margin-top:4px;
+  }
+  .quiz-a[hidden]{ display:none; }
+  .quiz-btns{ display:flex; flex-direction:column; gap:6px; flex:0 0 auto; }
+  .quiz-btns .btn{ padding: clamp(6px,1.2vh,9px) 12px; white-space:nowrap; }
+
   /* --- Spielfläche: Stadion + Bedienung nebeneinander --- */
   .main{
     position:relative; z-index:1;
@@ -246,6 +285,9 @@
     body{ height:auto; min-height:100dvh; align-items:flex-start; }
     .board-wrap, .frame, .panel{ height:auto; }
     .main{ flex-direction:column; }
+    .quiz{ flex-wrap:wrap; }
+    .quiz-btns{ flex-direction:row; flex:1 1 100%; }
+    .quiz-btns .btn{ flex:1; }
     .pitch-wrap{ flex:0 0 auto; aspect-ratio: 1000 / 620; }
     .side-col{ flex:0 0 auto; flex-direction:row; flex-wrap:wrap; }
     .btn.team{ flex:1 1 45%; min-height:52px; }
@@ -266,6 +308,19 @@
       <div class="head-row">
         <a class="back" href="index.html">Zurück zur Übersicht</a>
         <h1>Tafelfußball</h1>
+        <label class="quiz-toggle"><input type="checkbox" id="quizToggle"> Quiz: Unnützes Wissen &amp; Schätzfragen</label>
+      </div>
+
+      <div class="quiz" id="quiz" hidden>
+        <div class="quiz-body">
+          <span class="quiz-tag" id="quizTag"></span>
+          <div class="quiz-q" id="quizQ"></div>
+          <div class="quiz-a" id="quizA" hidden></div>
+        </div>
+        <div class="quiz-btns">
+          <button class="btn" id="quizShow" type="button">Lösung zeigen</button>
+          <button class="btn ghost" id="quizNext" type="button">Andere Frage</button>
+        </div>
       </div>
 
       <div class="scores">
@@ -399,6 +454,7 @@
   </div>
 </div>
 
+<script src="tafelfussball-fragen.js"></script>
 <script>
 (function(){
   "use strict";
@@ -460,6 +516,7 @@
   function answer(t){
     if(busy) return;
     history.push({ pos:pos, A:score.A, B:score.B });
+    if(quizOn) nextQuestion();
     const next = pos + (t === 'A' ? 1 : -1);
     placeBall(next);
     pos = next;
@@ -540,6 +597,65 @@
     render();
   }
 
+  // --- Quiz-Modus: Fragen ohne Wiederholung, bis alle einmal dran waren ---
+  const QUESTIONS = window.TF_FRAGEN || [];
+  const TAGS = { u:'Unnützes Wissen', s:'Schätzfrage', a:'Allgemeinwissen' };
+  const STORE_KEY = 'tafelfussball-quiz';
+  const quizToggle = $('quizToggle'), quizBox = $('quiz'), quizTag = $('quizTag');
+  const quizQ = $('quizQ'), quizA = $('quizA'), quizShow = $('quizShow'), quizNext = $('quizNext');
+  let quizOn = false, deck = [], seen = [];
+
+  function loadQuiz(){
+    try{
+      const s = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+      if(s.total === QUESTIONS.length && Array.isArray(s.seen)) seen = s.seen.filter(function(i){ return i < QUESTIONS.length; });
+      quizOn = !!s.on;
+    }catch(e){}
+  }
+  function saveQuiz(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify({ total:QUESTIONS.length, seen:seen, on:quizOn })); }catch(e){}
+  }
+
+  function nextQuestion(){
+    if(!QUESTIONS.length) return;
+    if(!deck.length){
+      deck = [];
+      for(let i = 0; i < QUESTIONS.length; i++) if(seen.indexOf(i) < 0) deck.push(i);
+      if(!deck.length){ seen = []; for(let i = 0; i < QUESTIONS.length; i++) deck.push(i); }
+      for(let i = deck.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        const t = deck[i]; deck[i] = deck[j]; deck[j] = t;
+      }
+    }
+    const idx = deck.pop();
+    seen.push(idx);
+    saveQuiz();
+    const q = QUESTIONS[idx];
+    quizTag.textContent = TAGS[q[0]] || 'Frage';
+    quizTag.className = 'quiz-tag ' + q[0];
+    quizQ.textContent = q[1];
+    quizA.textContent = 'Lösung: ' + q[2];
+    quizA.hidden = true;
+    quizShow.textContent = 'Lösung zeigen';
+  }
+
+  function toggleAnswer(){
+    quizA.hidden = !quizA.hidden;
+    quizShow.textContent = quizA.hidden ? 'Lösung zeigen' : 'Lösung verbergen';
+  }
+
+  function setQuiz(on){
+    quizOn = on;
+    quizToggle.checked = on;
+    quizBox.hidden = !on || !QUESTIONS.length;
+    if(on && quizQ.textContent === '') nextQuestion();
+    saveQuiz();
+  }
+
+  quizToggle.addEventListener('change', function(){ setQuiz(quizToggle.checked); });
+  quizShow.addEventListener('click', toggleAnswer);
+  quizNext.addEventListener('click', nextQuestion);
+
   btns.A.addEventListener('click', function(){ answer('A'); });
   btns.B.addEventListener('click', function(){ answer('B'); });
   undoBtn.addEventListener('click', undo);
@@ -549,6 +665,8 @@
 
   pos = START; spin = 0; busy = false; history = []; score = { A:0, B:0 };
   render();
+  loadQuiz();
+  setQuiz(quizOn);
 })();
 </script>
 </body>
