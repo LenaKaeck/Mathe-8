@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gleichungen umstellen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-1:#24402F;
+    --bg-2:#1B3323;
+    --chalk:#F3EFE3;
+    --chalk-dim:#C9D6C4;
+    --yellow:#E8C25B;
+    --coral:#E2836B;
+    --green:#93C08C;
+    --blue:#89B7CB;
+    --rail:#12241A;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{min-height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,0.035) 0, transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(255,255,255,0.03) 0, transparent 40%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    font-family:'Space Grotesk', sans-serif;
+    color:var(--chalk);
+    padding:24px 16px 40px;
+  }
+  .board{ width:100%; max-width:920px; margin:0 auto; }
+  .frame{
+    background: repeating-linear-gradient(45deg, #8a5a34, #8a5a34 6px, #7a4c2b 6px, #7a4c2b 12px);
+    border-radius:22px; padding:10px; box-shadow:var(--shadow);
+  }
+  .panel{
+    background: radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.05), transparent 60%), var(--bg-1);
+    border-radius:16px; padding:28px 26px 26px; position:relative; min-height:560px;
+    display:flex; flex-direction:column;
+  }
+  .panel::before{
+    content:""; position:absolute; inset:0; border-radius:16px;
+    background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size:14px 14px; opacity:.35; pointer-events:none;
+  }
+  .panel > *{ position:relative; z-index:1; }
+
+  h1{
+    font-family:'Kalam', cursive; font-weight:700;
+    font-size:clamp(1.8rem,5vw,2.6rem); margin:0 0 6px; transform:rotate(-0.6deg);
+  }
+  .sub{ color:var(--chalk-dim); font-size:.95rem; margin:0 0 18px; max-width:62ch; line-height:1.5; }
+  .back{ align-self:flex-start; color:var(--chalk-dim); font-size:.85rem; text-decoration:none; display:inline-block; margin-bottom:12px; background:none; border:none; padding:0; cursor:pointer; font-family:inherit; }
+  .back:hover{ color:var(--yellow); }
+
+  /* Einstellungen */
+  .opts{ display:flex; gap:10px 24px; flex-wrap:wrap; margin-bottom:18px; font-size:.9rem; color:var(--chalk-dim); }
+  .opt-g{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .seg{ display:inline-flex; flex-wrap:wrap; border:1.5px solid rgba(243,239,227,.3); border-radius:10px; overflow:hidden; }
+  .seg button{
+    font-family:inherit; font-weight:600; font-size:.88rem; color:var(--chalk); background:transparent;
+    border:none; padding:8px 14px; cursor:pointer;
+  }
+  .seg button.on{ background:var(--yellow); color:#2B2110; }
+  .seg button:focus-visible{ outline:2px solid var(--blue); outline-offset:-2px; }
+
+  /* Menü */
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:14px; }
+  .st{
+    font-family:inherit; color:var(--chalk); text-align:left; cursor:pointer;
+    background:rgba(255,255,255,.04); border:1.5px solid rgba(243,239,227,.25);
+    border-radius:12px; padding:14px 14px 12px; display:flex; flex-direction:column; gap:6px;
+    transition:background .15s, border-color .15s, transform .1s;
+  }
+  .st:hover{ background:rgba(255,255,255,.09); border-color:rgba(243,239,227,.5); transform:translateY(-2px); }
+  .st:focus-visible{ outline:2px solid var(--blue); outline-offset:2px; }
+  .st .ic{ font-family:'Kalam',cursive; font-weight:700; font-size:1.45rem; color:var(--yellow); line-height:1.1; min-height:1.7rem; }
+  .st .nm{ font-weight:700; font-size:1.02rem; }
+  .st .ds{ color:var(--chalk-dim); font-size:.82rem; line-height:1.45; flex:1; }
+  .st.mix{ border-color:var(--yellow); }
+
+  /* Spielansicht */
+  .hud{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .hud .nm{ font-family:'Kalam',cursive; font-weight:700; font-size:1.25rem; }
+  .hud .stats{ color:var(--chalk-dim); font-size:.92rem; font-variant-numeric:tabular-nums; }
+  .tag{ display:inline-block; font-size:.72rem; font-weight:700; color:var(--bg-1); background:var(--yellow); border-radius:5px; padding:2px 8px; margin-left:6px; vertical-align:middle; }
+
+  .qwrap{ display:flex; flex-direction:column; align-items:center; text-align:center; padding:18px 0 8px; }
+  .qlabel{ font-size:.92rem; color:var(--chalk-dim); margin-bottom:12px; max-width:60ch; line-height:1.5; }
+  .expr{
+    font-family:'Kalam',cursive; font-weight:700; font-size:clamp(1.7rem,6vw,2.9rem);
+    line-height:1.4; word-break:break-word;
+  }
+  .expr.sm{ font-size:clamp(1.4rem,4.6vw,2.2rem); }
+  .story{ font-size:clamp(1.05rem,3vw,1.4rem); line-height:1.65; max-width:56ch; margin:0 auto; text-align:left; }
+  .pair{ display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .pair .lbl{ color:var(--chalk-dim); font-family:'Space Grotesk',sans-serif; font-size:.8em; font-weight:600; margin-right:.6em; }
+  .mcl{ list-style:none; margin:14px 0 0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; text-align:left; }
+  .mcl li{ background:rgba(255,255,255,.04); border:1.5px solid rgba(243,239,227,.25); border-radius:10px; padding:10px 14px; font-size:1.02rem; line-height:1.4; }
+  .mcl li b{ color:var(--yellow); margin-right:8px; }
+  .mcl.eqs li{ font-family:'Kalam',cursive; font-weight:700; font-size:1.5rem; }
+  @media (max-width:640px){ .mcl{ grid-template-columns:1fr; } .panel{ padding:22px 14px 20px; } }
+  .wfig{ width:100%; max-width:540px; margin:4px auto 6px; }
+  .wfig svg{ width:100%; height:auto; display:block; }
+  .wfig .cap{ font-size:.8rem; color:var(--chalk-dim); text-align:center; }
+  .frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .12em; line-height:1.1; font-size:.85em; }
+  .frac .n{ border-bottom:.07em solid currentColor; padding:0 .25em .06em; }
+  .frac .d{ padding:.06em .25em 0; }
+  sup{ font-size:.62em; line-height:0; }
+
+  .btnrow{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin:20px 0 6px; }
+  .btn{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.02rem; background:var(--yellow); color:#2B2110;
+    border:none; border-radius:10px; padding:13px 28px; cursor:pointer; box-shadow:0 4px 0 #b58f37;
+    transition:transform .08s, box-shadow .08s;
+  }
+  .btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #b58f37; }
+  .btn:focus-visible{ outline:2px solid var(--blue); outline-offset:3px; }
+  .btn.ghost{ background:transparent; color:var(--chalk); border:1.5px solid rgba(243,239,227,.4); box-shadow:none; }
+  .btn.ghost:active{ transform:scale(.98); }
+
+  .box{ margin-top:16px; border-radius:12px; padding:16px 18px; border:1.5px solid; text-align:left; }
+  .box.ans{ background:rgba(147,192,140,.14); border-color:var(--green); }
+  .box.way{ background:rgba(137,183,203,.10); border-color:var(--blue); }
+  .box .hd{ font-weight:700; font-size:1.02rem; margin-bottom:8px; }
+  .box.ans .hd{ color:var(--green); }
+  .box.way .hd{ color:var(--blue); }
+  .box .res{ font-family:'Kalam',cursive; font-weight:700; font-size:clamp(1.5rem,5vw,2.3rem); line-height:1.4; }
+  .box p{ margin:8px 0; line-height:1.65; color:var(--chalk-dim); }
+  .box p b, .box li b{ color:var(--chalk); }
+  .box ul{ margin:8px 0; padding-left:20px; color:var(--chalk-dim); line-height:1.7; }
+  .box .probe{ font-size:.95rem; }
+  .nr{ margin-top:12px; padding:10px 14px; background:rgba(0,0,0,.18); border-radius:10px; font-size:.95rem; color:var(--chalk-dim); line-height:1.8; }
+  .nr b{ color:var(--chalk); }
+  .nr .l{ font-family:'Kalam',cursive; font-weight:700; font-size:1.2em; color:var(--chalk); }
+
+  /* Rechenweg-Tabelle */
+  .steps{
+    display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto; column-gap:.55em; row-gap:.4em; align-items:center;
+    font-family:'Kalam',cursive; font-weight:700; font-size:clamp(1.2rem,3.9vw,1.85rem); margin:8px auto 0; color:var(--chalk);
+  }
+  .steps.num{ grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto; }
+  .steps .ls{ text-align:right; }
+  .steps .rs{ text-align:left; }
+  .steps .zn{ font-family:'Space Grotesk',sans-serif; font-size:.5em; color:var(--chalk-dim); font-weight:600; text-align:right; }
+  .steps .op{ border-left:2px solid rgba(243,239,227,.35); padding:2px 0 2px .7em; color:var(--coral); font-size:.82em; line-height:1.25; min-width:6.2em; }
+  .steps .op:empty{ border-left-color:transparent; }
+  .steps .op{ max-width:12em; }
+  .steps .op .tx{ display:block; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:.62em; line-height:1.3; }
+  .steps .op .wd{ display:block; font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:.52em; color:var(--chalk-dim); max-width:15em; margin-top:2px; }
+  .blank{ display:inline-block; width:5.5em; height:1.2em; border-bottom:2px dashed rgba(243,239,227,.5); vertical-align:bottom; }
+  .steps .bad{ color:var(--coral); }
+
+  .srow{ display:contents; }
+  @media (max-width:640px){
+    .steps,.steps.num{ display:block; font-size:clamp(1.05rem,4.8vw,1.35rem); }
+    .srow{ display:flex; flex-wrap:wrap; justify-content:center; align-items:center; column-gap:.4em; margin-bottom:.2em; }
+    .steps .ls,.steps .rs{ text-align:center; }
+    .steps .zn{ margin-right:.3em; }
+    .steps .zw{ display:none; }
+    .steps .op{ text-align:left; padding:2px 0 2px .5em; min-width:0; max-width:none; margin-left:.2em; }
+    .steps .op .tx{ display:inline; font-size:.7em; }
+    .steps .op:empty{ display:none; }
+    .steps .op .wd{ max-width:none; }
+    .box{ padding:14px 12px; }
+    .seg button{ padding:7px 10px; }
+  }
+
+  .sachl p{ margin:10px 0; }
+  .sachl .expr{ text-align:center; }
+
+  .hidden{ display:none !important; }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+<div class="board"><div class="frame"><div class="panel" id="app"></div></div></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ================= Hilfsfunktionen ================= */
+const M='−', DOT='·', NB=' ';
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=a=>a[rnd(0,a.length-1)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b];}return a;};
+const lcm=(a,b)=>Math.abs(a*b)/gcd(a,b);
+const sgn=()=>Math.random()<.5?-1:1;
+
+/* ---- Brüche (exakt) ---- */
+const F=(n,d=1)=>{if(d<0){n=-n;d=-d;}const g=gcd(n,d)||1;return{n:n/g,d:d/g};};
+const ZERO=F(0),ONE=F(1);
+const fadd=(a,b)=>F(a.n*b.d+b.n*a.d,a.d*b.d);
+const fsub=(a,b)=>F(a.n*b.d-b.n*a.d,a.d*b.d);
+const fmul=(a,b)=>F(a.n*b.n,a.d*b.d);
+const fdiv=(a,b)=>F(a.n*b.d,a.d*b.n);
+const fneg=a=>F(-a.n,a.d);
+const fabs=a=>F(Math.abs(a.n),a.d);
+const feq=(a,b)=>a.n===b.n&&a.d===b.d;
+const fcmp=(a,b)=>a.n*b.d-b.n*a.d;
+const isZ=a=>a.n===0;
+const toF=c=>c===null||c===undefined?null:(typeof c==='number'?F(c):c);
+
+/* ---- Darstellung ---- */
+const fracH=(n,d)=>`<span class="frac"><span class="n">${n}</span><span class="d">${d}</span></span>`;
+const terminating=f=>{let d=f.d;while(d%2===0)d/=2;while(d%5===0)d/=5;return d===1;};
+function decStr(f){
+  let k=0,p=1;while(p%f.d!==0){p*=10;k++;}
+  let s=String(Math.abs(f.n)*(p/f.d));
+  if(k>0){while(s.length<=k)s='0'+s;s=s.slice(0,-k)+','+s.slice(-k);}
+  return s;
+}
+function numH(f,mode){
+  const neg=f.n<0,a=fabs(f);let s;
+  if(a.d===1)s=String(a.n);
+  else if(mode==='dec'&&terminating(a))s=decStr(a);
+  else s=fracH(a.n,a.d);
+  return (neg?M:'')+s;
+}
+function termMag(c,deg,mode){ // c ≥ 0
+  if(deg===0)return numH(c,mode);
+  const v=deg===1?'x':'x<sup>2</sup>';
+  if(c.d===1)return (c.n===1?'':String(c.n))+v;
+  if(mode==='dec'&&terminating(c))return decStr(c)+v;
+  return fracH(c.n===1?v:c.n+v,c.d);
+}
+const joinI=items=>items.length?items.map((it,i)=>i?NB+(it.neg?M:'+')+NB+it.mag:(it.neg?M:'')+it.mag).join(''):'0';
+const seqT=(terms,mode)=>joinI(terms.filter(t=>t.c&&t.c.n!==0).map(t=>({neg:t.c.n<0,mag:termMag(fabs(t.c),t.deg,mode)})));
+const linSide=(a,b,mode)=>seqT([{c:a,deg:1},{c:b,deg:0}],mode);
+const par=s=>s.startsWith(M)?'('+s+')':s;
+const eur=f=>{if(f.d===1)return f.n+' €';let s=decStr(f);if(/,\d$/.test(s))s+='0';return s+' €';};
+
+/* ---- Teile einer Seite ---- */
+const T=(...p)=>({k:'t',terms:p.map(([c,deg])=>({c:toF(c),deg}))});
+const BR=(m,a,b)=>({k:'br',m:toF(m),a:toF(a),b:toF(b)});
+const SQ=(neg,a,b)=>({k:'sq',m:F(neg?-1:1),a:toF(a),b:toF(b)});
+const PR=(neg,a,b,c,d)=>({k:'pr',m:F(neg?-1:1),a:toF(a),b:toF(b),c:toF(c),d:toF(d)});
+
+const inner=(a,b,mode)=>linSide(a,b,mode);
+function itemsOfPart(p,mode){
+  if(p.k==='t')return p.terms.filter(t=>t.c.n!==0).map(t=>({neg:t.c.n<0,mag:termMag(fabs(t.c),t.deg,mode)}));
+  const neg=p.m.n<0,mm=fabs(p.m);
+  if(p.k==='br'){const pre=feq(mm,ONE)?'':numH(mm,mode);return[{neg,mag:pre+'('+inner(p.a,p.b,mode)+')'}];}
+  if(p.k==='sq')return[{neg,mag:'('+inner(p.a,p.b,mode)+')<sup>2</sup>'}];
+  const f1=(feq(p.a,ONE)&&isZ(p.b))?'x':'('+inner(p.a,p.b,mode)+')';
+  return[{neg,mag:f1+'('+inner(p.c,p.d,mode)+')'}];
+}
+function expandPart(p){
+  if(p.k==='t')return p.terms.filter(t=>t.c&&t.c.n!==0);
+  const m=p.m;
+  if(p.k==='br')return[{c:fmul(m,p.a),deg:1},{c:fmul(m,p.b),deg:0}];
+  if(p.k==='sq')return[{c:fmul(m,fmul(p.a,p.a)),deg:2},{c:fmul(m,fmul(F(2),fmul(p.a,p.b))),deg:1},{c:fmul(m,fmul(p.b,p.b)),deg:0}];
+  return[{c:fmul(m,fmul(p.a,p.c)),deg:2},{c:fmul(m,fadd(fmul(p.a,p.d),fmul(p.b,p.c))),deg:1},{c:fmul(m,fmul(p.b,p.d)),deg:0}];
+}
+const sideH=(ps,mode)=>joinI(ps.flatMap(p=>itemsOfPart(p,mode)));
+function polyOf(ps){
+  const P={2:ZERO,1:ZERO,0:ZERO};
+  ps.forEach(p=>expandPart(p).forEach(t=>{P[t.deg]=fadd(P[t.deg],t.c);}));
+  return P;
+}
+const polyH=(P,mode)=>seqT([{c:P[2],deg:2},{c:P[1],deg:1},{c:P[0],deg:0}],mode);
+const evalP=(P,x)=>fadd(fadd(fmul(P[2],fmul(x,x)),fmul(P[1],x)),P[0]);
+const valOf=(ps,x)=>{let s=ZERO;ps.forEach(p=>expandPart(p).forEach(t=>{s=fadd(s,fmul(t.c,t.deg===0?ONE:t.deg===1?x:fmul(x,x)));}));return s;};
+function partNums(p){
+  if(p.k==='t')return p.terms.filter(t=>t.c).map(t=>t.c);
+  const r=[p.m,p.a,p.b];if(p.k==='pr')r.push(p.c,p.d);return r;
+}
+function fillFree(Lp,Rp,x0){
+  let free=null,inL=false;
+  Lp.forEach(p=>{if(p.k==='t')p.terms.forEach(t=>{if(t.c===null){free=t;inL=true;}});});
+  Rp.forEach(p=>{if(p.k==='t')p.terms.forEach(t=>{if(t.c===null){free=t;inL=false;}});});
+  if(!free)return true;
+  const lv=valOf(Lp,x0),rv=valOf(Rp,x0);
+  free.c=inL?fsub(rv,lv):fsub(lv,rv);
+  return !isZ(free.c);
+}
+
+/* ================= Rechenoperationen & Lösungsweg ================= */
+function opArith(kind,on,v,mode){
+  const val=on==='c'?numH(v,mode):termMag(v,on==='x'?1:2,mode);
+  return{k:kind,on,v,t:(kind==='sub'?M:'+')+' '+val};
+}
+const elim=(on,c,mode)=>c.n>0?opArith('sub',on,c,mode):opArith('add',on,fabs(c),mode);
+function opDiv(k,mode){
+  if(k.d===1||(mode==='dec'&&terminating(k)))return{k:'div',v:k,t:': '+par(numH(k,mode))};
+  const inv=fdiv(ONE,k);
+  return{k:'mul',v:inv,t:DOT+' '+par(numH(inv,mode))};
+}
+function wordsOf(op){
+  if((op.k==='sub'||op.k==='add')&&op.v.d===1&&op.on!=='x2'){
+    const n=op.v.n,what=op.on==='c'?`Gewichte im Wert von ${n}`:'je '+(n===1?'einen x-Block':n+' x-Blöcke');
+    return op.k==='sub'?`Nimm links und rechts ${what} weg.`:`Lege links und rechts ${what} dazu.`;
+  }
+  if(op.k==='div'&&op.v.d===1)return `Verteile den Inhalt jeder Waagschale auf ${Math.abs(op.v.n)} gleiche Teile.`;
+  return '';
+}
+
+function nextStep(s,mode){
+  const{a,b,c,d}=s;
+  if(!isZ(a)&&!isZ(c)){
+    if(fcmp(a,c)>=0)return{id:'xc',op:elim('x',c,mode),to:{a:fsub(a,c),b,c:ZERO,d}};
+    return{id:'xa',op:elim('x',a,mode),to:{a:ZERO,b,c:fsub(c,a),d}};
+  }
+  if(!isZ(a)){
+    if(!isZ(b))return{id:'cl',op:elim('c',b,mode),to:{a,b:ZERO,c:ZERO,d:fsub(d,b)}};
+    if(!feq(a,ONE))return{id:'dl',op:opDiv(a,mode),to:{a:ONE,b:ZERO,c:ZERO,d:fdiv(d,a)}};
+    return null;
+  }
+  if(!isZ(c)){
+    if(!isZ(d))return{id:'cr',op:elim('c',d,mode),to:{a:ZERO,b:fsub(b,d),c,d:ZERO}};
+    if(!feq(c,ONE))return{id:'dr',op:opDiv(c,mode),to:{a:ZERO,b:fdiv(b,c),c:ONE,d:ZERO}};
+    return{id:'sw',op:{k:'txt',t:'Seiten tauschen'},to:{a:ONE,b:ZERO,c:ZERO,d:b}};
+  }
+  return undefined;
+}
+const mkRow=(st,mode)=>({Ls:linSide(st.a,st.b,mode),Rs:linSide(st.c,st.d,mode),st});
+
+function walk(st,mode,corrupt){
+  const rows=[mkRow(st,mode)];
+  let cur=st,n=0,err=null;
+  for(;;){
+    const s=nextStep(cur,mode);
+    if(s===undefined)return null;
+    if(s===null)break;
+    let to=s.to;
+    if(corrupt&&n===corrupt.at){
+      const w=corrupt.make(cur,s,mode);if(!w)return null;
+      to=w.to;err={row:rows.length,msg:w.msg,good:s.to};
+    }
+    rows[rows.length-1].op=s.op;
+    rows.push(mkRow(to,mode));
+    cur=to;
+    if(++n>8)return null;
+  }
+  return{rows,x:cur.d,err};
+}
+
+function expandLabel(all){
+  const labs=[];const add=s=>{if(!labs.includes(s))labs.push(s);};
+  all.forEach(p=>{
+    if(p.k==='br')add(feq(p.m,F(-1))?'Minus vor der Klammer: Vorzeichen umdrehen':'Klammern ausmultiplizieren');
+    else if(p.k==='sq')add(p.b.n<0?'2. binomische Formel':'1. binomische Formel');
+    else if(p.k==='pr')add(feq(p.a,p.c)&&feq(p.b,fneg(p.d))?'3. binomische Formel':'Klammern ausmultiplizieren');
+  });
+  return labs.join(' &amp; ');
+}
+const sgnTerm=(t,mode)=>(t.c.n<0?M:'')+termMag(fabs(t.c),t.deg,mode);
+function detailPart(p,mode){
+  const mag=itemsOfPart(p,mode)[0].mag,neg=p.m.n<0,expd=seqT(expandPart(p),mode);
+  const pos=Object.assign({},p,{m:ONE}),expd1=seqT(expandPart(pos),mode);
+  if(p.k==='br'){
+    if(feq(p.m,F(-1)))return `<span class="l">${M}${mag} = ${expd}</span> &nbsp;(Das Minus dreht alle Vorzeichen in der Klammer um.)`;
+    const mS=par(numH(p.m,mode));
+    return `<span class="l">${numH(p.m,mode)}${mag.replace(/^[^(]*/,'')} = ${mS}${DOT}${par(sgnTerm({c:p.a,deg:1},mode))} + ${mS}${DOT}${par(sgnTerm({c:p.b,deg:0},mode))} = ${expd}</span>`;
+  }
+  const aX=feq(p.a,ONE)?'x':termMag(p.a,1,mode);
+  const wrap=s=>s.includes('frac')?'('+s+')':s;
+  let formula;
+  if(p.k==='sq'){
+    const B=numH(fabs(p.b),mode);
+    const first=feq(p.a,ONE)?'x<sup>2</sup>':`(${aX})<sup>2</sup>`;
+    formula=`${first} ${p.b.n<0?M:'+'} 2${DOT}${aX}${DOT}${B} + ${wrap(B)}<sup>2</sup>`;
+  }else if(feq(p.a,p.c)&&feq(p.b,fneg(p.d))){
+    const B=numH(fabs(p.b),mode);
+    formula=`${feq(p.a,ONE)?'x<sup>2</sup>':`(${aX})<sup>2</sup>`} ${M} ${wrap(B)}<sup>2</sup>`;
+  }else{
+    const A=sgnTerm({c:p.a,deg:1},mode),C=sgnTerm({c:p.c,deg:1},mode),D=sgnTerm({c:p.d,deg:0},mode);
+    if(isZ(p.b))formula=`${A}${DOT}${par(C)} + ${A}${DOT}${par(D)}`;
+    else{const B=sgnTerm({c:p.b,deg:0},mode);formula=`${A}${DOT}${par(C)} + ${A}${DOT}${par(D)} + ${par(B)}${DOT}${par(C)} + ${par(B)}${DOT}${par(D)}`;}
+  }
+  if(neg)return `<span class="l">${M}${mag} = ${M}(${formula}) = ${M}(${expd1}) = ${expd}</span> &nbsp;(Das Minus gilt für die ganze Klammer.)`;
+  return `<span class="l">${mag} = ${formula} = ${expd}</span>`;
+}
+
+function solveParts(Lp,Rp,mode){
+  const all=[...Lp,...Rp];
+  const rows=[{Ls:sideH(Lp,mode),Rs:sideH(Rp,mode)}];
+  const go=(Ls,Rs,op,st)=>{
+    const last=rows[rows.length-1];
+    if(last.Ls===Ls&&last.Rs===Rs){if(st)last.st=st;return false;}
+    last.op=op;rows.push({Ls,Rs,st});return true;
+  };
+  if(all.some(p=>p.k!=='t')){
+    const e=ps=>seqT(ps.flatMap(expandPart),mode);
+    go(e(Lp),e(Rp),{k:'txt',t:expandLabel(all)});
+  }
+  const PL=polyOf(Lp),PR=polyOf(Rp);
+  const has2=!isZ(PL[2])||!isZ(PR[2]);
+  if(has2&&!feq(PL[2],PR[2]))return null;
+  go(polyH(PL,mode),polyH(PR,mode),{k:'txt',t:'Zusammenfassen'});
+  const st={a:PL[1],b:PL[0],c:PR[1],d:PR[0]};
+  const Ls=linSide(st.a,st.b,mode),Rs=linSide(st.c,st.d,mode);
+  if(has2)go(Ls,Rs,elim('x2',PL[2],mode),st);else go(Ls,Rs,{k:'txt',t:'Zusammenfassen'},st);
+  const w=walk(st,mode);if(!w)return null;
+  rows[rows.length-1].op=w.rows[0].op;
+  rows.push(...w.rows.slice(1));
+  const lv=evalP(PL,w.x),rv=evalP(PR,w.x);
+  if(!feq(lv,rv))return null;
+  const nums=[PL[0],PL[1],PL[2],PR[0],PR[1],PR[2],w.x];
+  rows.forEach(r=>{if(r.st)nums.push(r.st.a,r.st.b,r.st.c,r.st.d);});
+  const pnums=[];all.forEach(p=>pnums.push(...partNums(p)));
+  nums.push(...pnums);
+  return{rows,x:w.x,mode,PL,PR,lv,rv,nums,pnums,
+    details:all.filter(p=>p.k!=='t').map(p=>detailPart(p,mode)),
+    linIdx:rows.findIndex(r=>r.st)};
+}
+
+/* ---- Zahlenpools für die Aufgabengeneratoren ---- */
+function mkPools(mode,L){
+  const hard=L===2;
+  const ns=()=>hard&&Math.random()<.3?-1:1;
+  const dp=a=>F(Math.round(pick(a)*10),10);
+  const P={};
+  if(mode==='int'){
+    P.A=()=>F(ns()*rnd(2,9));
+    P.B=()=>F(sgn()*rnd(1,15));
+    P.Bs=()=>F(sgn()*rnd(1,7));
+    P.M=()=>F(ns()*rnd(2,9));
+    P.U=()=>F(rnd(2,9));
+    P.Bk=()=>F(sgn()*rnd(1,12));
+    P.x0=()=>F(ns()*rnd(1,10));
+  }else if(mode==='dec'){
+    P.A=()=>fmul(dp([0.5,1.5,2.5,0.2,0.4,0.6,0.8,1.2,2,3,4,5]),F(ns()));
+    P.B=()=>fmul(dp([0.5,1.5,2.5,3.5,0.2,0.4,0.6,0.8,1.2,2,3,4,5,6,7,8,9,10,12]),F(sgn()));
+    P.Bs=()=>F(sgn()*rnd(1,7));
+    P.M=()=>fmul(dp([0.5,1.5,2.5,2,3,4]),F(ns()));
+    P.U=()=>dp([0.5,1.5,2.5,2,3,4]);
+    P.Bk=()=>P.B();
+    P.x0=()=>Math.random()<.7?F(ns()*rnd(1,10)):F(ns()*(2*rnd(0,5)+1),2);
+  }else{
+    const co=[F(1,2),F(1,3),F(2,3),F(1,4),F(3,4),F(1,5),F(3,2),F(5,2),F(4,3),F(2),F(3),F(4),F(5)];
+    P.A=()=>fmul(pick(co),F(ns()));
+    P.B=()=>fmul(pick([F(1,2),F(3,2),F(1,3),F(2,3),F(1,4),F(3,4),F(5,2),F(2),F(3),F(4),F(5),F(6),F(7)]),F(sgn()));
+    P.Bs=()=>fmul(pick([F(1,2),F(3,2),F(1),F(2),F(3),F(4)]),F(sgn()));
+    P.M=()=>fmul(pick([F(1,2),F(1,3),F(2,3),F(3,4),F(1,4),F(2),F(3),F(4)]),F(ns()));
+    P.U=()=>pick([F(1,2),F(1,3),F(2,3),F(3,4),F(2),F(3),F(4)]);
+    P.Bk=()=>F(sgn()*rnd(1,9));
+    P.x0=(...fs)=>{
+      let q=1;fs.forEach(f=>{q=lcm(q,f.d);});
+      if(q===1&&Math.random()<.15)return fmul(pick([F(1,2),F(3,2),F(5,2)]),F(ns()));
+      return F(ns()*q*rnd(1,Math.max(1,Math.floor(12/q))));
+    };
+  }
+  return P;
+}
+function niceF(f,mode,loose){
+  if(Math.abs(f.n/f.d)>150)return false;
+  if(mode==='int')return f.d===1;
+  if(mode==='dec')return terminating(f)&&(loose?f.d<=100:[1,2,5,10].includes(f.d));
+  return f.d<=(loose?12:9)&&Math.abs(f.n)<=100;
+}
+function build(tpls,mode,L,loose){
+  const P=mkPools(mode,L);
+  for(let t=0;t<600;t++){
+    const s=pick(tpls)(P);
+    if(!s)continue;
+    if(isZ(s.x0)||!fillFree(s.L,s.R,s.x0))continue;
+    const sol=solveParts(s.L,s.R,mode);
+    if(!sol||!feq(sol.x,s.x0))continue;
+    if(!sol.nums.every(f=>niceF(f,mode,loose)))continue;
+    if(mode!=='int'&&!sol.pnums.some(f=>f.d!==1)&&sol.x.d===1)continue;
+    if(mode==='frac'&&!(sol.pnums.every(f=>f.d<=6)&&sol.pnums.filter(f=>f.d!==1).length<=2))continue;
+    if(mode==='dec'&&sol.pnums.filter(f=>f.d!==1).length>3)continue;
+    return{spec:s,sol};
+  }
+  return null;
+}
+
+/* ================= Vorlagen ================= */
+const X1=ONE;
+const SIMPLE={
+  1:[
+    P=>({L:[T([X1,1],[P.B(),0])],R:[T([null,0])],x0:P.x0()}),
+    P=>{const a=P.A();return{L:[T([a,1])],R:[T([null,0])],x0:P.x0(a)};},
+    P=>{const a=P.A(),b=P.B();return{L:[T([a,1],[b,0])],R:[T([null,0])],x0:P.x0(a)};},
+    P=>{const a=P.A(),b=P.B();return{L:[T([a,1],[b,0])],R:[T([null,0])],x0:P.x0(a)};},
+    P=>{const k=F(1,rnd(2,6)),b=P.B();return{L:[T([k,1],[b,0])],R:[T([null,0])],x0:P.x0(k)};}
+  ],
+  2:[
+    P=>{const a=P.A(),c=P.A(),b=P.B();if(feq(a,c))return null;return{L:[T([a,1],[b,0])],R:[T([c,1],[null,0])],x0:P.x0(a,c)};},
+    P=>{const a=P.A(),c=P.A(),b=P.B();if(feq(a,c))return null;return{L:[T([a,1],[b,0])],R:[T([c,1],[null,0])],x0:P.x0(a,c)};},
+    P=>{const a=P.A(),b=P.B();return{L:[T([b,0],[fneg(fabs(a)),1])],R:[T([null,0])],x0:P.x0(a)};},
+    P=>{const a=P.A(),b=P.B();return{L:[T([null,0])],R:[T([a,1],[b,0])],x0:P.x0(a)};},
+    P=>{const a=P.A(),c=P.A(),b=P.B();if(isZ(fadd(a,c)))return null;return{L:[T([a,1],[b,0],[c,1])],R:[T([null,0])],x0:P.x0(a,c)};},
+    P=>{const a=P.A(),c=fabs(P.A()),b=P.B();return{L:[T([a,1],[b,0])],R:[T([null,0],[fneg(c),1])],x0:P.x0(a,c)};}
+  ]
+};
+const KLA={
+  1:[
+    P=>{const m=P.U(),b=P.Bk();return{L:[BR(m,X1,b)],R:[T([null,0])],x0:P.x0(m)};},
+    P=>{const m=P.U(),b=P.Bk(),c=P.Bk();return{L:[BR(m,X1,b),T([c,0])],R:[T([null,0])],x0:P.x0(m)};},
+    P=>{const m=P.U(),a=F(rnd(2,4)),b=P.Bk();return{L:[BR(m,a,b)],R:[T([null,0])],x0:P.x0(m)};},
+    P=>{const b=P.Bk();return{L:[T([null,0]),BR(F(-1),X1,b)],R:[T([P.Bk(),0])],x0:P.x0()};}
+  ],
+  2:[
+    P=>{const m=P.M(),b=P.Bk(),c=P.A();if(feq(m,c))return null;return{L:[BR(m,X1,b)],R:[T([c,1],[null,0])],x0:P.x0(m,c)};},
+    P=>{const m=P.M(),n=P.M(),b=P.Bk(),c=P.Bk();if(isZ(fadd(m,n)))return null;return{L:[BR(m,X1,b),BR(n,X1,c)],R:[T([null,0])],x0:P.x0(m,n)};},
+    P=>{const m=P.U(),n=P.U(),b=P.Bk(),c=P.Bk();if(feq(m,n))return null;return{L:[BR(m,X1,b),BR(fneg(n),X1,c)],R:[T([null,0])],x0:P.x0(m,n)};},
+    P=>{const m=P.M(),n=P.M(),b=P.Bk(),c=P.Bk();if(feq(m,n))return null;return{L:[BR(m,X1,b)],R:[BR(n,X1,c),T([null,0])],x0:P.x0(m,n)};},
+    P=>{const a=P.A(),b2=fabs(P.A()),c=P.Bk();if(feq(a,b2))return null;return{L:[T([a,1]),BR(F(-1),b2,c)],R:[T([null,0])],x0:P.x0(a,b2)};},
+    P=>{const m=P.M(),a=F(rnd(2,4)),b=P.Bk(),c=P.A();if(feq(fmul(m,a),c))return null;return{L:[BR(m,a,b)],R:[T([c,1],[null,0])],x0:P.x0(m,c)};}
+  ]
+};
+const BIN={
+  1:[
+    P=>{const b=P.Bs(),c=P.B();if(feq(fmul(F(2),b),c))return null;return{L:[SQ(false,X1,b)],R:[T([X1,2],[c,1],[null,0])],x0:P.x0(b,c)};},
+    P=>{const b=P.Bs(),c=P.B();return{L:[PR(false,X1,b,X1,fneg(b))],R:[T([X1,2],[c,1],[null,0])],x0:P.x0(b,c)};},
+    P=>{const b=P.Bs(),c=P.Bs();if(feq(b,c))return null;return{L:[SQ(false,X1,b)],R:[SQ(false,X1,c),T([null,0])],x0:P.x0(b,c)};},
+    P=>{const b=P.Bs(),c=P.B();if(feq(fmul(F(2),b),c))return null;return{L:[SQ(false,X1,b)],R:[PR(false,X1,ZERO,X1,c),T([null,0])],x0:P.x0(b,c)};},
+    P=>{const b=P.Bs(),c=P.Bs();if(isZ(fadd(b,c)))return null;return{L:[PR(false,X1,b,X1,c)],R:[T([X1,2],[null,0])],x0:P.x0(b,c)};}
+  ],
+  2:[
+    P=>{const b=P.Bs(),c=P.Bs();if(isZ(fadd(b,c)))return null;return{L:[SQ(false,X1,b),SQ(true,X1,fneg(c))],R:[T([null,0])],x0:P.x0(b,c)};},
+    P=>{const b=P.Bs(),c=P.Bs();return{L:[SQ(false,X1,b),PR(true,X1,c,X1,fneg(c))],R:[T([null,0])],x0:P.x0(b,c)};},
+    P=>{const a=P.Bs(),b=P.Bs();return{L:[PR(false,X1,a,X1,fneg(a))],R:[SQ(false,X1,fneg(b)),T([null,0])],x0:P.x0(a,b)};},
+    P=>{const a=F(rnd(2,3)),b=P.Bs(),c=P.B();if(feq(fmul(F(2),fmul(a,b)),c))return null;return{L:[SQ(false,a,b)],R:[T([fmul(a,a),2],[c,1],[null,0])],x0:P.x0(b,c)};},
+    P=>{const a=F(rnd(2,3)),b=P.Bs(),c=P.B();if(isZ(c))return null;return{L:[PR(false,a,b,a,fneg(b))],R:[T([fmul(a,a),2],[c,1],[null,0])],x0:P.x0(b,c)};},
+    P=>{const b=P.Bs(),c=P.Bs();return{L:[SQ(false,X1,b),T([c,1])],R:[PR(false,X1,ZERO,X1,P.B()),T([null,0])],x0:P.x0(b,c)};}
+  ]
+};
+
+/* ================= Aufgaben aus gelösten Gleichungen ================= */
+function stepsHtml(sol,opt){
+  opt=opt||{};
+  const rows=sol.rows;
+  let h=`<div class="steps${opt.num?' num':''}">`+rows.map((r,i)=>{
+    let o='';
+    if(r.op){
+      if(opt.blank)o='<span class="blank"></span>';
+      else{o=r.op.k==='txt'?`<span class="tx">${r.op.t}</span>`:r.op.t;const w=opt.words?wordsOf(r.op):'';if(w)o+=`<span class="wd">${w}</span>`;}
+    }
+    return `<div class="srow">`+(opt.num?`<span class="zn"><span class="zw">Zeile </span>${i+1}</span>`:'')+`<span class="ls">${r.Ls}</span><span class="eq">=</span><span class="rs">${r.Rs}</span><span class="op">${o}</span></div>`;
+  }).join('')+'</div>';
+  return h;
+}
+function extrasHtml(sol,noProbe){
+  let h='';
+  if(sol.details&&sol.details.length)h+=`<div class="nr"><b>Nebenrechnung:</b>${sol.details.map(d=>`<div>${d}</div>`).join('')}</div>`;
+  if(noProbe)return h;
+  h+=`<p class="probe"><b>Probe:</b> Setzt man x = ${numH(sol.x,sol.mode)} ein, ergibt sich links ${numH(sol.lv,sol.mode)} und rechts ${numH(sol.rv,sol.mode)} – die Gleichung stimmt.</p>`;
+  return h;
+}
+const eqLine=(sol,i=0)=>`${sol.rows[i].Ls} = ${sol.rows[i].Rs}`;
+const wayBox=inner=>`<div class="box way"><div class="hd">Rechenweg</div>${inner}</div>`;
+const ansBox=inner=>`<div class="box ans"><div class="hd">Lösung</div>${inner}</div>`;
+
+function task(station,label,q,ans,way,mode){return{station,label,q,ans:ansBox(ans),way:wayBox(way),mode};}
+
+function eqTask(station,label,b,mode,hint){
+  const sol=b.sol;
+  return task(station,label,`<div class="expr">${eqLine(sol)}</div>`,
+    `<div class="res">x = ${numH(sol.x,mode)}</div>`,
+    (hint?`<p>${hint}</p>`:'')+stepsHtml(sol)+extrasHtml(sol),mode);
+}
+
+/* ================= Station: Einfache Gleichungen ================= */
+function gEinf(L,mode){
+  const b=build(SIMPLE[L],mode,L);if(!b)return null;
+  return eqTask('einf','Löse die Gleichung nach x auf.',b,mode,'Tipp: Alle x-Terme auf eine Seite, alle Zahlen auf die andere – mit Äquivalenzumformungen (auf beiden Seiten dasselbe tun).');
+}
+/* ================= Station: Klammern ================= */
+function gKla(L,mode){
+  const b=build(KLA[L],mode,L);if(!b)return null;
+  return eqTask('kla','Löse die Gleichung. Löse zuerst die Klammern auf.',b,mode);
+}
+/* ================= Station: Binomische Formeln ================= */
+function gBin(L,mode){
+  const b=build(BIN[L],mode,L);if(!b)return null;
+  return eqTask('bin','Löse die Gleichung. Wende die binomischen Formeln an – die x² fallen am Ende weg.',b,mode);
+}
+
+/* ================= Station: Waagemodell ================= */
+const decompose=n=>{const w=[];[10,5,2,1].forEach(v=>{while(n>=v){w.push(v);n-=v;}});return w;};
+const RAD={1:12,2:14,5:17,10:20},COL={1:'#F3D98A',2:'#E8C25B',5:'#E0A25F',10:'#E2836B'};
+function waageSvg(Lp,Rp,tilt){
+  const W=560,H=290,px=280,py=84,half=176,str=104,pw=82;
+  const th=tilt*Math.PI/180,co=Math.cos(th),si=Math.sin(th);
+  const lx=px-half*co,ly=py-half*si,rx=px+half*co,ry=py+half*si;
+  const pan=(cx,cy,P)=>{
+    const y2=cy+str;
+    let s=`<g stroke="var(--chalk-dim)" stroke-width="2"><line x1="${cx}" y1="${cy}" x2="${cx-pw}" y2="${y2}"/><line x1="${cx}" y1="${cy}" x2="${cx+pw}" y2="${y2}"/></g>`;
+    s+=`<rect x="${cx-pw-10}" y="${y2}" width="${2*pw+20}" height="8" rx="4" fill="#c98d55"/>`;
+    const items=[];for(let i=0;i<P.nx;i++)items.push('x');decompose(P.c).forEach(v=>items.push(v));
+    for(let r=0;r*4<items.length;r++){
+      const row=items.slice(r*4,r*4+4),wids=row.map(t=>t==='x'?36:2*RAD[t]),gap=6;
+      let cur=cx-(wids.reduce((a,b)=>a+b,0)+gap*(row.length-1))/2;const base=y2-1-r*41;
+      row.forEach((t,i)=>{
+        const w=wids[i];
+        if(t==='x')s+=`<rect x="${cur}" y="${base-36}" width="36" height="36" rx="5" fill="var(--blue)" stroke="#4f7f93" stroke-width="2"/><text x="${cur+18}" y="${base-12}" text-anchor="middle" font-family="Kalam,cursive" font-weight="700" font-size="24" fill="#12303d">x</text>`;
+        else s+=`<circle cx="${cur+w/2}" cy="${base-RAD[t]}" r="${RAD[t]}" fill="${COL[t]}" stroke="#8b6a1d" stroke-width="1.5"/><text x="${cur+w/2}" y="${base-RAD[t]+5}" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="${t===10?15:14}" fill="#2B2110">${t}</text>`;
+        cur+=w+gap;
+      });
+    }
+    return s;
+  };
+  let g=`<path d="M${px-46} ${H-18} L${px+46} ${H-18} L${px} ${py+10} Z" fill="rgba(255,255,255,.07)" stroke="var(--chalk-dim)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  g+=`<rect x="${px-90}" y="${H-18}" width="180" height="10" rx="5" fill="var(--chalk-dim)"/>`;
+  g+=`<line x1="${lx}" y1="${ly}" x2="${rx}" y2="${ry}" stroke="#c98d55" stroke-width="10" stroke-linecap="round"/>`;
+  g+=pan(lx,ly,Lp)+pan(rx,ry,Rp);
+  g+=`<circle cx="${px}" cy="${py}" r="11" fill="var(--yellow)" stroke="#8b6a1d" stroke-width="2"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Balkenwaage mit x-Blöcken und Gewichten">${g}</svg>`;
+}
+const wfig=(l,r,tilt,cap)=>`<div class="wfig">${waageSvg(l,r,tilt)}${cap?`<div class="cap">${cap}</div>`:''}</div>`;
+const sideParts=s=>[T([F(s.nx),1],[F(s.c),0])];
+const wEq=(l,r,mode)=>`${sideH(sideParts(l),mode)} = ${sideH(sideParts(r),mode)}`;
+const wVal=(s,x)=>fadd(fmul(F(s.nx),x),F(s.c));
+function tiltFor(wl,wr){
+  const d=(wr.n/wr.d)-(wl.n/wl.d);
+  if(Math.abs(d)<1e-9)return 0;
+  return (d>0?1:-1)*Math.max(5,Math.min(14,Math.abs(d)*3));
+}
+function describe(s){
+  const p=[];
+  if(s.nx)p.push(s.nx===1?'ein x-Block':`${s.nx} x-Blöcke`);
+  if(s.c){const w=decompose(s.c);p.push(w.length===1?`ein Gewicht von ${w[0]}`:`Gewichte ${w.join(' + ')} (zusammen ${s.c})`);}
+  return p.join(' und ');
+}
+function waageSetup(L){
+  for(;;){
+    const x0=rnd(1,L===1?5:6),nxL=rnd(1,L===1?3:4);
+    const nxR=L===1?(Math.random()<.65?0:rnd(0,nxL-1)):rnd(0,nxL-1);
+    if(nxR>=nxL)continue;
+    const cL=rnd(0,L===1?6:8),cR=(nxL-nxR)*x0+cL;
+    if(cR<1||cR>(L===1?15:20))continue;
+    if(nxL===1&&cL===0&&nxR===0)continue;
+    return{x0:F(x0),l:{nx:nxL,c:cL},r:{nx:nxR,c:cR}};
+  }
+}
+function waageEqSol(l,r){
+  const sol=solveParts(sideParts(l),sideParts(r),'int');
+  return sol;
+}
+function gWaage(L){
+  const t=pick(L===1?['auf','auf','weg','mc','kippt']:['auf','weg','weg','mc','kippt','kippt']);
+  const S=waageSetup(L),l=S.l,r=S.r;
+  const sol=waageEqSol(l,r);
+  if(!sol)return null;
+  const intro=`<p>Links liegen ${describe(l)}, rechts liegen ${describe(r)}.</p>`;
+  if(t==='auf'){
+    return task('waage','Die Waage ist im Gleichgewicht. Alle x-Blöcke wiegen gleich viel, die Zahlen geben das Gewicht der Wägestücke an.',
+      wfig(l,r,0)+`<div class="qlabel" style="margin-top:6px">a) Stelle die Gleichung auf. &nbsp; b) Wie schwer ist ein x-Block?</div>`,
+      `<div class="res">${eqLine(sol)}</div><div class="res">x = ${sol.x.n}</div>`,
+      intro+stepsHtml(sol,{words:true})+extrasHtml(sol),'int');
+  }
+  if(t==='weg'){
+    if(Math.random()<.65){
+      const kmax=Math.min(l.nx,r.nx),wmax=Math.min(l.c,r.c);
+      let k=0,w=0,guard=0;
+      do{k=rnd(0,kmax);w=rnd(0,wmax);guard++;}while((k+w===0||l.nx-k+l.c-w===0||r.nx-k+r.c-w===0)&&guard<50);
+      if(k+w===0)return null;
+      const nl={nx:l.nx-k,c:l.c-w},nr={nx:r.nx-k,c:r.c-w};
+      const what=[k?(k===1?'ein x-Block':`${k} x-Blöcke`):'',w?`Gewichte im Wert von ${w}`:''].filter(Boolean).join(' und ');
+      const op=[k?`${M} ${termMag(F(k),1,'int')}`:'',w?`${M} ${w}`:''].filter(Boolean).join(' ');
+      const s2=waageEqSol(nl,nr);
+      return task('waage','Die Waage ist im Gleichgewicht.',
+        wfig(l,r,0)+`<div class="qlabel" style="margin-top:6px">Auf <b>beiden</b> Seiten werden ${what} weggenommen.<br>a) Wie lautet die neue Gleichung? &nbsp; b) Bleibt die Waage im Gleichgewicht? Begründe.</div>`,
+        `<div class="res">${wEq(nl,nr,'int')}</div><p>Ja, die Waage bleibt im Gleichgewicht, weil auf beiden Seiten gleich viel weggenommen wurde.</p>`+wfig(nl,nr,0),
+        intro+`<div class="steps"><span class="ls">${sideH(sideParts(l),'int')}</span><span class="eq">=</span><span class="rs">${sideH(sideParts(r),'int')}</span><span class="op">${op}</span><span class="ls">${sideH(sideParts(nl),'int')}</span><span class="eq">=</span><span class="rs">${sideH(sideParts(nr),'int')}</span><span class="op"></span></div>`+
+        `<p>Das Wegnehmen auf beiden Seiten ist eine <b>Äquivalenzumformung</b>: Die Lösung bleibt gleich. Auch jetzt gilt x = ${S.x0.n}: links ${numH(wVal(nl,S.x0),'int')}, rechts ${numH(wVal(nr,S.x0),'int')}.</p>`+(s2?`<p>Weiter geht es so:</p>`+stepsHtml(s2,{words:true}):''),'int');
+    }
+    // ungleich: nur links einen x-Block weg oder nur rechts Gewichte weg
+    let nl=l,nr=r,txt,dir;
+    if(Math.random()<.5&&l.nx>=1&&!(l.nx===1&&l.c===0)){nl={nx:l.nx-1,c:l.c};txt='Links wird ein x-Block weggenommen, rechts bleibt alles liegen.';dir='rechts';}
+    else{const w=Math.min(r.c,rnd(1,3));if(w<1||r.c-w+r.nx===0)return null;nr={nx:r.nx,c:r.c-w};txt=`Rechts werden Gewichte im Wert von ${w} weggenommen, links bleibt alles liegen.`;dir='links';}
+    const wl=wVal(nl,S.x0),wr=wVal(nr,S.x0);
+    return task('waage','Die Waage ist im Gleichgewicht.',
+      wfig(l,r,0)+`<div class="qlabel" style="margin-top:6px">${txt}<br>Was passiert mit der Waage? Begründe.</div>`,
+      `<div class="res">Die Waage kippt nach ${dir}.</div>`+wfig(nl,nr,tiltFor(wl,wr)),
+      intro+`<p>Vorher war alles im Gleichgewicht (x = ${S.x0.n}). ${txt}</p><p>Jetzt wiegt die linke Seite ${numH(wl,'int')} und die rechte Seite ${numH(wr,'int')}. Die ${dir==='rechts'?'rechte':'linke'} Seite ist schwerer, also kippt die Waage nach ${dir}.</p><p>Merke: Nur wenn man auf <b>beiden</b> Seiten genau dasselbe wegnimmt (oder dazulegt), bleibt das Gleichgewicht erhalten – das ist eine Äquivalenzumformung.</p>`,'int');
+  }
+  if(t==='mc'){
+    const good=wEq(l,r,'int');
+    const cands=[
+      wEq(l,{nx:r.nx,c:r.c+pick([1,-1,2,-2])},'int'),
+      wEq({nx:l.nx+pick([1,-1]),c:l.c},r,'int'),
+      wEq({nx:l.nx,c:l.c+pick([1,2,-1])},r,'int'),
+      wEq(l,{nx:r.nx+1,c:r.c},'int'),
+      wEq({nx:r.nx,c:l.c},{nx:l.nx,c:r.c},'int')
+    ].filter(s=>s!==good&&!/^0|= 0$| 0x|= $/.test(s));
+    const opts=[good];
+    shuffle(cands).forEach(c=>{if(opts.length<4&&!opts.includes(c)&&!/(^|[ =])0x/.test(c))opts.push(c);});
+    if(opts.length<4)return null;
+    const sh=shuffle(opts),idx=sh.indexOf(good),L2=['A','B','C','D'];
+    return task('waage','Die Waage ist im Gleichgewicht. Welche Gleichung passt zur Waage?',
+      wfig(l,r,0)+`<ul class="mcl eqs">${sh.map((o,i)=>`<li><b>${L2[i]})</b> ${o}</li>`).join('')}</ul>`,
+      `<div class="res">${L2[idx]}) ${good}</div>`,
+      intro+`<p>Links: ${sideH(sideParts(l),'int')}<br>Rechts: ${sideH(sideParts(r),'int')}</p><p>Zwischen die beiden Seiten kommt ein Gleichheitszeichen, weil die Waage im Gleichgewicht ist. Jeder x-Block zählt als <b>x</b>, die Gewichte werden zu einer Zahl addiert.</p>`,'int');
+  }
+  // kippt: x gegeben (je nach Zahlenart), Waage neutral
+  const modeW=pick(['int','dec','frac']);
+  const xv=modeW==='int'?F(rnd(1,6)):modeW==='dec'?pick([F(1,5),F(2,5),F(1,2),F(3,5),F(3,2),F(5,2)]):pick([F(1,2),F(3,2),F(5,2),F(1,4)]);
+  const bal=Math.random()<.3;
+  const l2={nx:rnd(1,3),c:rnd(0,6)};
+  let r2={nx:rnd(0,l2.nx-1),c:rnd(1,12)};
+  if(bal){const need=fsub(wVal(l2,xv),fmul(F(r2.nx),xv));if(need.d!==1||need.n<1)return null;r2.c=need.n;}
+  const wl=wVal(l2,xv),wr=wVal(r2,xv);
+  if(!bal&&feq(wl,wr))return null;
+  const dirT=feq(wl,wr)?'Die Waage bleibt im Gleichgewicht.':(fcmp(wr,wl)>0?'Die Waage kippt nach rechts.':'Die Waage kippt nach links.');
+  const calc=(s,w)=>s.nx?`${s.nx>1?s.nx+DOT:''}${numH(xv,modeW)}${s.c?' + '+s.c:''} = ${numH(w,modeW)}`:String(s.c);
+  return task('waage',`Ein x-Block wiegt ${numH(xv,modeW)}. Wie steht die Waage, wenn man sie loslässt?`,
+    wfig(l2,r2,0,'Die Waage wird gerade festgehalten.')+`<div class="qlabel" style="margin-top:6px">Berechne das Gewicht beider Seiten. Zur Gleichung ${wEq(l2,r2,modeW)}: Ist x = ${numH(xv,modeW)} eine Lösung?</div>`,
+    `<div class="res">${dirT}</div>`+wfig(l2,r2,tiltFor(wl,wr)),
+    `<p>Linke Seite: ${calc(l2,wl)}</p><p>Rechte Seite: ${calc(r2,wr)}</p><p>${feq(wl,wr)?'Beide Seiten wiegen gleich viel: x = '+numH(xv,modeW)+' ist eine <b>Lösung</b> der Gleichung.':`${fcmp(wr,wl)>0?'Rechts':'Links'} ist schwerer, also kippt die Waage nach ${fcmp(wr,wl)>0?'rechts':'links'}. x = ${numH(xv,modeW)} ist <b>keine</b> Lösung der Gleichung.`}</p>`,modeW);
+}
+
+/* ================= Station: Sachtexte ================= */
+const KF=['Doppelte','Dreifache','Vierfache','Fünffache','Sechsfache','Siebenfache','Achtfache','Neunfache'];
+const SACH={
+  zahlA(){for(;;){
+    const k=rnd(2,9),b=rnd(2,15),plus=Math.random()<.5,x0=rnd(2,15),d=k*x0+(plus?b:-b);if(d<1)continue;
+    const w=KF[k-2],verb=plus?'vermehrt':'vermindert';
+    return{mode:'int',text:`Das ${w} einer Zahl, ${verb} um ${b}, ergibt ${d}. Wie heißt die Zahl?`,defn:'x = die gesuchte Zahl',
+      L:[T([k,1],[plus?b:-b,0])],R:[T([d,0])],
+      setup:`„Das ${w} der Zahl“ → ${k}x; „${verb} um ${b}“ → ${plus?'+':M} ${b}; „ergibt ${d}“ → = ${d}.`,
+      sentence:x=>`Die gesuchte Zahl ist <b>${x}</b>.`,check:x=>`${k}${DOT}${x} ${plus?'+':M} ${b} = ${d}`};
+  }},
+  zahlD(){for(;;){
+    const q=pick([2,3,4,5]),nm={2:'Die Hälfte',3:'Ein Drittel',4:'Ein Viertel',5:'Ein Fünftel'}[q],b=rnd(2,9),plus=Math.random()<.5,x0=q*rnd(2,8),d=x0/q+(plus?b:-b);if(d<1)continue;
+    const verb=plus?'vermehrt':'vermindert';
+    return{mode:'int',text:`${nm} einer Zahl, ${verb} um ${b}, ergibt ${d}. Wie heißt die Zahl?`,defn:'x = die gesuchte Zahl',
+      L:[T([F(1,q),1],[plus?b:-b,0])],R:[T([d,0])],
+      setup:`„${nm} der Zahl“ → ${fracH('x',q)}; „${verb} um ${b}“ → ${plus?'+':M} ${b}; „ergibt ${d}“ → = ${d}.`,
+      sentence:x=>`Die gesuchte Zahl ist <b>${x}</b>.`,check:x=>`${x} : ${q} ${plus?'+':M} ${b} = ${d}`};
+  }},
+  zahlC(){for(;;){
+    const k=rnd(2,9),b=rnd(2,9),plus=Math.random()<.6,x0=rnd(plus?1:b+1,15),d=k*(x0+(plus?b:-b));if(d<1)continue;
+    return{mode:'int',text:plus?`Addiert man zu einer Zahl ${b} und multipliziert die Summe mit ${k}, so erhält man ${d}. Wie heißt die Zahl?`:`Subtrahiert man von einer Zahl ${b} und multipliziert die Differenz mit ${k}, so erhält man ${d}. Wie heißt die Zahl?`,
+      defn:'x = die gesuchte Zahl',L:[BR(k,1,plus?b:-b)],R:[T([d,0])],
+      setup:`${plus?'„Zahl plus':'„Zahl minus'} ${b}“ → (x ${plus?'+':M} ${b}); „mit ${k} multiplizieren“ → ${k}${DOT}(x ${plus?'+':M} ${b}); „ergibt ${d}“ → = ${d}.`,
+      sentence:x=>`Die gesuchte Zahl ist <b>${x}</b>.`,check:x=>`${k}${DOT}(${x} ${plus?'+':M} ${b}) = ${d}`};
+  }},
+  zahlB(){for(;;){
+    const k=rnd(2,6),j=k+rnd(1,4),x0=rnd(3,12),b=rnd(2,12),c=(j-k)*x0-b;if(c<1)continue;
+    return{mode:'int',text:`Multipliziert man eine Zahl mit ${k} und addiert ${b}, so erhält man dasselbe, wie wenn man die Zahl mit ${j} multipliziert und ${c} subtrahiert. Wie heißt die Zahl?`,
+      defn:'x = die gesuchte Zahl',L:[T([k,1],[b,0])],R:[T([j,1],[-c,0])],
+      setup:`Linke Beschreibung: ${k}x + ${b}. Rechte Beschreibung: ${j}x ${M} ${c}. „dasselbe“ → Gleichheitszeichen.`,
+      sentence:x=>`Die gesuchte Zahl ist <b>${x}</b>.`,check:x=>`${k}${DOT}${x} + ${b} = ${k*x0+b} und ${j}${DOT}${x} ${M} ${c} = ${j*x0-c}`};
+  }},
+  zahlE(){for(;;){
+    const k=rnd(3,7),j=rnd(1,k-1),x0=rnd(2,10),b=rnd(1,8),c=(k-j)*x0+k*b;if(c>80)continue;
+    return{mode:'int',text:`Vergrößert man eine Zahl um ${b} und multipliziert das Ergebnis mit ${k}, so erhält man dasselbe, wie wenn man die Zahl mit ${j} multipliziert und ${c} addiert. Wie heißt die Zahl?`,
+      defn:'x = die gesuchte Zahl',L:[BR(k,1,b)],R:[T([j,1],[c,0])],
+      setup:`„um ${b} vergrößert und mit ${k} multipliziert“ → ${k}${DOT}(x + ${b}); „mit ${j} multipliziert und ${c} addiert“ → ${j}x + ${c}.`,
+      sentence:x=>`Die gesuchte Zahl ist <b>${x}</b>.`,check:x=>`${k}${DOT}(${x} + ${b}) = ${k*(x0+b)} und ${j}${DOT}${x} + ${c} = ${j*x0+c}`};
+  }},
+  alter(){for(;;){
+    const f=pick([2,3]),n=rnd(2,10),x0=rnd(8,15),D=(f-1)*(x0+n);if(D<22||D>40)continue;
+    const fem=Math.random()<.5,name=fem?pick(['Anna','Mia','Lena','Emma','Lara']):pick(['Ben','Tom','Jonas','Paul','Luis']),rel=fem?'Mutter':'Vater',pos=fem?'Ihre':'Sein';
+    const fw=f===2?'doppelt':'dreimal',art=fem?'die':'der';
+    return{mode:'int',text:`${art[0].toUpperCase()+art.slice(1)} ${rel} von ${name} ist ${D} Jahre älter als ${name}. In ${n} Jahren ist ${fem?'sie':'er'} genau ${fw} so alt wie ${name}. Wie alt ist ${name} heute?`,
+      defn:`x = Alter von ${name} heute (in Jahren)`,L:[T([1,1],[D,0],[n,0])],R:[BR(f,1,n)],
+      setup:`Heute: ${name} x, ${rel} x + ${D}. In ${n} Jahren: ${name} x + ${n}, ${rel} x + ${D} + ${n}. ${art[0].toUpperCase()+art.slice(1)} ${rel} ist dann ${fw} so alt: x + ${D} + ${n} = ${f}${DOT}(x + ${n}).`,
+      sentence:x=>`${name} ist heute <b>${x}</b> Jahre alt (${art} ${rel} ist ${x+D}).`,
+      check:x=>`In ${n} Jahren: ${name} ${x+n}, ${rel} ${x+D+n} = ${f}${DOT}${x+n}`};
+  }},
+  vergleich(){for(;;){
+    const x0=rnd(3,14),a=pick([1,1.5,2,2.5,3,4]),dl=pick([0.5,1,1.5,2]),c=a+dl,d=pick([2,3,4,5,6,8,10]),b=d+dl*x0;
+    const A=F(Math.round(a*10),10),C=F(Math.round(c*10),10),D=F(d),B=F(Math.round(b*10),10),tot=fadd(B,fmul(A,F(x0)));
+    const sc=pick(['fit','hand','spar']);
+    let text,defn,sentence,who;
+    if(sc==='fit'){
+      who=['Studio „Fit & Fun“','Studio „PowerPlus“'];
+      text=`Das Fitnessstudio „Fit & Fun“ verlangt ${eur(B)} Grundgebühr im Monat und ${eur(A)} pro Besuch. Das Studio „PowerPlus“ verlangt nur ${eur(D)} Grundgebühr, dafür aber ${eur(C)} pro Besuch. Bei wie vielen Besuchen im Monat kosten beide Studios gleich viel?`;
+      defn='x = Anzahl der Besuche im Monat';sentence=x=>`Bei <b>${x}</b> Besuchen im Monat kosten beide Studios gleich viel (${eur(tot)}).`;
+    }else if(sc==='hand'){
+      who=['Firma „Flink“','Firma „Fix“'];
+      text=`Die Firma „Flink“ berechnet ${eur(B)} Anfahrt und ${eur(A)} pro Arbeitsstunde. Die Firma „Fix“ berechnet ${eur(D)} Anfahrt und ${eur(C)} pro Arbeitsstunde. Nach wie vielen Arbeitsstunden kosten beide Firmen gleich viel?`;
+      defn='x = Anzahl der Arbeitsstunden';sentence=x=>`Nach <b>${x}</b> Arbeitsstunden kosten beide Firmen gleich viel (${eur(tot)}).`;
+    }else{
+      who=['Mia','Tom'];
+      text=`Mia hat schon ${eur(B)} gespart und legt jede Woche ${eur(A)} dazu. Tom hat erst ${eur(D)} und legt jede Woche ${eur(C)} dazu. Nach wie vielen Wochen haben beide gleich viel Geld?`;
+      defn='x = Anzahl der Wochen';sentence=x=>`Nach <b>${x}</b> Wochen haben beide gleich viel (${eur(tot)}).`;
+    }
+    return{mode:'dec',text,defn,L:[T([B,0],[A,1])],R:[T([D,0],[C,1])],
+      setup:`${who[0]}: ${eur(B)} + ${eur(A)}${DOT}x. ${who[1]}: ${eur(D)} + ${eur(C)}${DOT}x. „Gleich viel“ → Gleichheitszeichen.`,
+      sentence,check:x=>`${eur(B)} + ${eur(A)}${DOT}${x} = ${eur(tot)} und ${eur(D)} + ${eur(C)}${DOT}${x} = ${eur(tot)}`};
+  }},
+  kino(){for(;;){
+    const x0=pick([3,3.5,4,4.5,5,5.5,6,7,8]),m=rnd(2,5),na=rnd(2,4),nk=rnd(1,4),X=F(Math.round(x0*10),10),Tt=fadd(fmul(F(na),fadd(X,F(m))),fmul(F(nk),X));
+    const place=pick(['Kino','Zoo','Schwimmbad']);
+    return{mode:'dec',text:`Im ${place} zahlen ${na} Erwachsene und ${nk} ${nk===1?'Kind':'Kinder'} zusammen ${eur(Tt)}. Ein Erwachsener zahlt ${eur(F(m))} mehr als ein Kind. Wie viel kostet der Eintritt für ein Kind?`,
+      defn:'x = Eintritt für ein Kind (in €)',L:[BR(na,1,m),T([nk,1])],R:[T([Tt,0])],
+      setup:`Kind: x. Erwachsener: x + ${m}. ${na} Erwachsene: ${na}${DOT}(x + ${m}); ${nk} ${nk===1?'Kind':'Kinder'}: ${nk}x. Zusammen ${eur(Tt)}.`,
+      sentence:x=>`Ein Kind zahlt <b>${eur(X)}</b> Eintritt (ein Erwachsener ${eur(fadd(X,F(m)))}).`,
+      check:x=>`${na}${DOT}${eur(fadd(X,F(m)))} + ${nk}${DOT}${eur(X)} = ${eur(Tt)}`};
+  }},
+  rechteck(){for(;;){
+    const m=rnd(2,9),x0=rnd(3,15),U=4*x0+2*m;
+    return{mode:'int',text:`Ein Rechteck ist ${m} cm länger als breit. Sein Umfang beträgt ${U} cm. Wie breit ist das Rechteck?`,
+      defn:'x = Breite des Rechtecks (in cm)',L:[T([2,1]),BR(2,1,m)],R:[T([U,0])],
+      setup:`Breite: x, Länge: x + ${m}. Umfang = 2${DOT}Breite + 2${DOT}Länge, also 2x + 2${DOT}(x + ${m}) = ${U}.`,
+      sentence:x=>`Das Rechteck ist <b>${x} cm</b> breit und ${x+m} cm lang.`,
+      check:x=>`2${DOT}${x} + 2${DOT}${x+m} = ${2*x+2*(x+m)}`};
+  }},
+  dreieck(){for(;;){
+    const p=pick([2,3]),x0=rnd(25,50),q=180-(p+2)*x0;if(q<10||q>60||q%5)continue;
+    return{mode:'int',text:`In einem Dreieck ist der Winkel α ${p===2?'doppelt':'dreimal'} so groß wie der Winkel β. Der Winkel γ ist ${q}° größer als β. Wie groß ist β? (Die Winkelsumme im Dreieck beträgt 180°.)`,
+      defn:'x = Größe von β (in °)',L:[T([p,1],[1,1]),BR(1,1,q)],R:[T([180,0])],
+      setup:`β = x, α = ${p}x, γ = x + ${q}. Winkelsumme: ${p}x + x + (x + ${q}) = 180.`,
+      sentence:x=>`β = <b>${x}°</b>, α = ${p*x}°, γ = ${x+q}°.`,
+      check:x=>`${p*x}° + ${x}° + ${x+q}° = 180°`};
+  }},
+  einkauf(){for(;;){
+    const x0=pick([0.4,0.5,0.6,0.8,0.9,1.2,1.5,2.5]),n=rnd(3,8),c=pick([0.5,0.8,1,1.2,1.5,2,2.5,3]);
+    const X=F(Math.round(x0*10),10),C=F(Math.round(c*10),10),Tt=fadd(fmul(F(n),X),C);
+    const it=pick([['Hefte','Lineal','ein Heft'],['Brötchen','Zeitung','ein Brötchen'],['Stifte','Radiergummi','ein Stift']]);
+    return{mode:'dec',text:`Mia kauft ${n} ${it[0]} und ein ${it[1]}. Das ${it[1]} kostet ${eur(C)}. Insgesamt bezahlt sie ${eur(Tt)}. Wie viel kostet ${it[2]}?`,
+      defn:`x = Preis für ${it[2]} (in €)`,L:[T([n,1],[C,0])],R:[T([Tt,0])],
+      setup:`${n} ${it[0]}: ${n}x. Dazu das ${it[1]} für ${eur(C)}. Zusammen ${eur(Tt)}.`,
+      sentence:x=>`${it[2][0].toUpperCase()+it[2].slice(1)} kostet <b>${eur(X)}</b>.`,
+      check:x=>`${n}${DOT}${eur(X)} + ${eur(C)} = ${eur(Tt)}`};
+  }}
+};
+function gSach(L){
+  const keys=L===1?['zahlA','zahlD','zahlC','kino','rechteck','einkauf']:['zahlB','zahlE','alter','alter','vergleich','vergleich','dreieck','kino'];
+  for(let t=0;t<30;t++){
+    const s=SACH[pick(keys)]();
+    if(!s.L.every(Boolean))continue;
+    const sol=solveParts(s.L,s.R,s.mode);
+    if(!sol)continue;
+    if(!sol.nums.every(f=>niceF(f,s.mode,true)))continue;
+    const xs=numH(sol.x,s.mode),xn=sol.x.d===1?sol.x.n:null;
+    const sentence=s.sentence(xn===null?xs:xn);
+    const way=`<div class="sachl"><p><b>1. Variable festlegen:</b> ${s.defn}</p><p><b>2. Gleichung aufstellen:</b> ${s.setup}</p><div class="expr sm">${eqLine(sol)}</div><p><b>3. Gleichung lösen:</b></p>${stepsHtml(sol)}${extrasHtml(sol,true)}<p><b>4. Probe am Text:</b> ${s.check(xn===null?xs:xn)} ✓</p><p><b>5. Antwortsatz:</b> ${sentence}</p></div>`;
+    return task('sach','Stelle eine Gleichung auf und löse sie.',`<p class="story">${s.text}</p>`,`<div class="res" style="font-size:clamp(1.1rem,3.4vw,1.6rem)">${sentence}</div><p>Gleichung: ${eqLine(sol)}</p>`,way,s.mode);
+  }
+  return null;
+}
+
+/* ================= Station: Umformungen erkennen ================= */
+const opLong=(op,mode)=>{
+  if(op.k==='sub'||op.k==='add'){
+    const v=op.on==='c'?numH(op.v,mode):termMag(op.v,1,mode);
+    return `Auf beiden Seiten ${v} ${op.k==='sub'?'subtrahieren':'addieren'}`;
+  }
+  if(op.k==='div')return `Beide Seiten durch ${par(numH(op.v,mode))} teilen`;
+  return `Beide Seiten mit ${par(numH(op.v,mode))} multiplizieren`;
+};
+const ARITH=['sub','add','div','mul'];
+function srcSol(L,mode){
+  for(let t=0;t<12;t++){
+    const tp=L===1?SIMPLE[1].concat(SIMPLE[2].slice(0,2)):SIMPLE[2].concat(KLA[1],KLA[2].slice(0,3));
+    const b=build(tp,mode,L);if(b&&b.sol.rows.length>=4)return b.sol;
+  }
+  return null;
+}
+const applyStr=(side,op)=>{
+  const wrap=/[ ]/.test(side.replace(/<[^>]*>/g,''));
+  return (op.k==='div'||op.k==='mul')?`${wrap?'('+side+')':side} ${op.t}`:`${side} ${op.t}`;
+};
+const whyOp=(op)=>{
+  if(op.k==='txt')return op.t==='Zusammenfassen'?'Gleichartige Terme werden zusammengefasst.':op.t==='Seiten tauschen'?'Damit x links steht, werden die Seiten getauscht.':`${op.t.replace(/&amp;/g,'&')}.`;
+  if(op.on==='x'||op.on==='x2')return `Die x-Terme sollen auf <b>einer</b> Seite stehen. Dazu rechnet man ${op.t} – auf beiden Seiten.`;
+  if(op.on==='c')return `Die Zahl soll auf die andere Seite. Dazu nimmt man die Gegenoperation (${op.t}) – auf beiden Seiten.`;
+  return op.k==='div'?`x soll allein stehen. Man teilt durch den Faktor vor x (${op.t}) – beide Seiten.`:`x soll allein stehen. Man multipliziert mit dem Kehrwert des Faktors vor x (${op.t}) – beide Seiten.`;
+};
+function gUmf(L,mode){
+  const t=pick(['which','which','fill','find','find']);
+  const sol=srcSol(L,mode);if(!sol)return null;
+  if(t==='which'){
+    const idx=[];sol.rows.forEach((r,i)=>{if(r.op&&ARITH.includes(r.op.k))idx.push(i);});
+    if(!idx.length)return null;
+    const i=pick(idx),op=sol.rows[i].op,r0=sol.rows[i],r1=sol.rows[i+1];
+    const cands=[];
+    const flip=Object.assign({},op,{k:op.k==='sub'?'add':op.k==='add'?'sub':op.k==='div'?'mul':'div'});
+    if(op.k==='sub'||op.k==='add')cands.push(flip);
+    if(op.k==='sub'||op.k==='add'){
+      if(op.on==='c'&&!feq(op.v,ONE)&&op.v.n>0)cands.push({k:'div',v:op.v});
+      if(op.on==='x')cands.push({k:op.k,on:'c',v:op.v});
+      if(op.on==='c')cands.push({k:op.k,on:'x',v:op.v});
+      [F(1),F(-1),F(2)].forEach(dv=>{const v=fadd(op.v,dv);if(v.n>0)cands.push({k:op.k,on:op.on,v});});
+    }else{
+      cands.push({k:op.k==='div'?'mul':'div',v:op.v});
+      cands.push({k:'sub',on:'c',v:fabs(op.v)});
+      cands.push({k:op.k,v:fadd(op.v,F(pick([1,-1,2])))});
+      cands.push({k:op.k,v:fneg(op.v)});
+    }
+    const good=opLong(op,mode),seen=[good],opts=[good];
+    shuffle(cands).forEach(c=>{
+      if(c.v.n===0||(c.k==='div'&&c.v.n===0))return;
+      const s=opLong(c,mode);if(opts.length<4&&!seen.includes(s)){seen.push(s);opts.push(s);}
+    });
+    if(opts.length<4)return null;
+    const sh=shuffle(opts),LB=['A','B','C','D'],gi=sh.indexOf(good);
+    return task('umf','Eine Gleichung wurde durch <b>eine</b> Äquivalenzumformung verändert. Welche?',
+      `<div class="pair"><div class="expr"><span class="lbl">I</span>${r0.Ls} = ${r0.Rs}</div><div class="expr"><span class="lbl">II</span>${r1.Ls} = ${r1.Rs}</div></div><ol class="mcl" style="list-style:none">${sh.map((o,k)=>`<li><b>${LB[k]})</b> ${o}</li>`).join('')}</ol>`,
+      `<div class="res" style="font-size:clamp(1.1rem,3.4vw,1.6rem)">${LB[gi]}) ${good}</div>`,
+      `<p>Wende die richtige Umformung auf <b>beide</b> Seiten von I an:</p><p>Linke Seite: ${applyStr(r0.Ls,op)} = ${r1.Ls}<br>Rechte Seite: ${applyStr(r0.Rs,op)} = ${r1.Rs}</p><p>Das ergibt genau Gleichung II. Bei den anderen Antworten würde auf einer Seite etwas anderes herauskommen.</p>`,mode);
+  }
+  if(t==='fill'){
+    return task('umf','Ergänze rechts: Welche Äquivalenzumformung wurde jeweils von Zeile zu Zeile durchgeführt?',
+      `<div class="expr sm">${stepsHtml(sol,{blank:true,num:true})}</div>`,
+      `<div class="expr sm">${stepsHtml(sol,{num:true})}</div>`,
+      `<ul>${sol.rows.map((r,i)=>r.op?`<li><b>Zeile ${i+1} → ${i+2}:</b> ${r.op.t.replace(/&amp;/g,'&')}. ${whyOp(r.op)}</li>`:'').join('')}</ul>`+extrasHtml(sol),mode);
+  }
+  // find: Fehler suchen
+  const li=sol.linIdx;
+  const wal=walk(sol.rows[li].st,mode);
+  if(!wal||wal.rows.length<3)return null;
+  const wrong=Math.random()<.6;
+  let rows=sol.rows.slice(0,li),errInfo=null;
+  if(wrong){
+    const n=wal.rows.length-1;
+    let w2=null;
+    for(let tr=0;tr<10&&!w2;tr++){
+      const at=rnd(0,n-1);
+      w2=walk(sol.rows[li].st,mode,{at,make:makeCorrupt});
+      if(w2&&(!w2.err||w2.rows.length>9||![w2.x].every(f=>niceF(f,mode,true))||!w2.rows.every(r=>[r.st.a,r.st.b,r.st.c,r.st.d].every(f=>niceF(f,mode,true)))))w2=null;
+      if(w2&&!w2.err)w2=null;
+      if(w2&&feq(w2.x,wal.x))w2=null;
+    }
+    if(!w2)return null;
+    rows=rows.concat(w2.rows);errInfo=w2.err;errInfo.row+=li;
+  }else rows=rows.concat(wal.rows);
+  const shown=Object.assign({},sol,{rows});
+  const goodSol=sol;
+  const nm=pick(['Tim','Lena','Mia','Jonas','Sophie','Ben']);
+  const ansT=wrong?`<div class="res" style="font-size:clamp(1.1rem,3.4vw,1.6rem)">Ja, in <b>Zeile ${errInfo.row+1}</b> steckt ein Fehler.</div><p>${errInfo.msg}</p><p>Richtig müsste Zeile ${errInfo.row+1} so lauten: <b>${mkRow(errInfo.good,mode).Ls} = ${mkRow(errInfo.good,mode).Rs}</b></p>`
+    :`<div class="res" style="font-size:clamp(1.1rem,3.4vw,1.6rem)">Nein, ${nm} hat <b>richtig</b> gerechnet: x = ${numH(sol.x,mode)}.</div>`;
+  return task('umf',`${nm} hat die Gleichung gelöst. Prüfe die Rechnung Zeile für Zeile: Stimmt alles? Wenn nicht: Wo steckt der Fehler und was wurde falsch gemacht?`,
+    `<div class="expr sm">${stepsHtml(shown,{num:true})}</div>`,ansT,
+    `<p>Richtiger Rechenweg:</p>${stepsHtml(goodSol)}${extrasHtml(goodSol)}`,mode);
+}
+function makeCorrupt(cur,s,mode){
+  const{a,b,c,d}=cur,to=s.to,o=[];
+  const add=(t2,msg)=>{if(!(feq(t2.a,to.a)&&feq(t2.b,to.b)&&feq(t2.c,to.c)&&feq(t2.d,to.d)))o.push({to:t2,msg});};
+  const one=`Die Umformung (${s.op.t}) wurde nur auf <b>einer</b> Seite durchgeführt. Eine Äquivalenzumformung muss immer auf <b>beiden</b> Seiten passieren.`;
+  const sg=`Vorzeichenfehler: Bei der Umformung (${s.op.t}) wurde mit dem falschen Vorzeichen gerechnet (+ statt ${M} bzw. umgekehrt).`;
+  switch(s.id){
+    case 'xc':add({a:fadd(a,c),b,c:ZERO,d},sg);add({a,b,c:ZERO,d},one);break;
+    case 'xa':add({a:ZERO,b,c:fadd(c,a),d},sg);add({a:ZERO,b,c,d},one);break;
+    case 'cl':add({a,b:ZERO,c:ZERO,d:fadd(d,b)},sg);add({a,b:ZERO,c:ZERO,d},one);break;
+    case 'cr':add({a:ZERO,b:fadd(b,d),c,d:ZERO},sg);add({a:ZERO,b,c,d:ZERO},one);break;
+    case 'dl':add({a:ONE,b:ZERO,c:ZERO,d:fsub(d,a)},`Hier muss <b>geteilt</b> werden (${s.op.t}), nicht subtrahiert.`);add({a:ONE,b:ZERO,c:ZERO,d:fmul(d,a)},`Hier muss <b>geteilt</b> werden (${s.op.t}), nicht multipliziert.`);add({a:ONE,b:ZERO,c:ZERO,d},one);break;
+    case 'dr':add({a:ZERO,b:fsub(b,c),c:ONE,d:ZERO},`Hier muss <b>geteilt</b> werden (${s.op.t}), nicht subtrahiert.`);add({a:ZERO,b:fmul(b,c),c:ONE,d:ZERO},`Hier muss <b>geteilt</b> werden (${s.op.t}), nicht multipliziert.`);add({a:ZERO,b,c:ONE,d:ZERO},one);break;
+    default:return null;
+  }
+  return o.length?pick(o):null;
+}
+
+/* ================= Stationen ================= */
+const STATIONS=[
+  {id:'waage',ic:'⚖ 2x + 1 = 7',nm:'Waagemodell',ds:'Gleichung zur Waage aufstellen, auf beiden Seiten wegnehmen, Waage interpretieren (Gleichgewicht oder Kippen).',gen:gWaage,fixed:true},
+  {id:'einf',ic:'3x + 5 = 20',nm:'Einfache Gleichungen',ds:'Nach x auflösen: x auf beiden Seiten, Zahlen und x vertauscht, mit Dezimalzahlen und Brüchen.',gen:gEinf},
+  {id:'kla',ic:'2(x + 3) = 14',nm:'Gleichungen mit Klammern',ds:'Klammern auflösen, Minus vor der Klammer, mehrere Klammern – ohne binomische Formeln.',gen:gKla},
+  {id:'bin',ic:'(x + 3)² = x² + …',nm:'Binomische Formeln',ds:'Gleichungen, in denen x² auf beiden Seiten vorkommt und wegfällt – mit 1., 2. und 3. binomischer Formel.',gen:gBin},
+  {id:'sach',ic:'„3 mehr als …“',nm:'Sachtextaufgaben',ds:'Zahlenrätsel, Alter, Preisvergleich, Geometrie: Text in Gleichung übersetzen und lösen.',gen:gSach,fixed:true},
+  {id:'umf',ic:'| − 3  | : 2',nm:'Umformungen erkennen',ds:'Welche Äquivalenzumformung wurde gemacht? Fehlende Schritte ergänzen, Fehler in einer Rechnung finden.',gen:gUmf}
+];
+const MIXST={id:'mix',ic:'Mix',nm:'Gemischte Aufgaben',ds:'Aufgaben aus allen Stationen in zufälliger Reihenfolge.'};
+const MODES=[['mix','Alles gemischt'],['int','Ganze Zahlen'],['dec','Dezimalzahlen'],['frac','Brüche']];
+const modeTag={dec:'Dezimalzahlen',frac:'Brüche'};
+
+/* ================= Zustand ================= */
+let S={view:'menu',lvl:1,mode:'mix',st:null,n:0,task:null,stage:0,last:null};
+let store={lvl:1,mode:'mix'};
+try{const j=JSON.parse(localStorage.getItem('gleichungenumstellen.v1')||'null');if(j)store=Object.assign(store,j);}catch(e){}
+S.lvl=store.lvl===2?2:1;S.mode=MODES.some(m=>m[0]===store.mode)?store.mode:'mix';
+const save=()=>{try{localStorage.setItem('gleichungenumstellen.v1',JSON.stringify({lvl:S.lvl,mode:S.mode}));}catch(e){}};
+
+function pickMode(){
+  if(S.mode!=='mix')return S.mode;
+  const r=Math.random();return r<.5?'int':r<.75?'dec':'frac';
+}
+function newTask(){
+  const stId=S.st;
+  for(let t=0;t<40;t++){
+    let st;
+    if(stId==='mix'){do{st=pick(STATIONS);}while(st.id===S.last&&Math.random()<.8);}
+    else st=STATIONS.find(s=>s.id===stId);
+    const tk=st.gen(S.lvl,pickMode());
+    if(tk){S.last=st.id;return tk;}
+  }
+  return null;
+}
+function nextTask(){S.task=newTask();S.n++;S.stage=0;}
+
+/* ================= Rendering ================= */
+const app=document.getElementById('app');
+const stName=id=>id==='mix'?MIXST.nm:STATIONS.find(s=>s.id===id).nm;
+
+function settings(){
+  return `<div class="opts">
+    <div class="opt-g"><span>Niveau:</span><div class="seg" role="group" aria-label="Niveau">
+      <button data-act="lvl" data-v="1" class="${S.lvl===1?'on':''}">Einstieg</button>
+      <button data-act="lvl" data-v="2" class="${S.lvl===2?'on':''}">Fortgeschritten</button></div></div>
+    <div class="opt-g"><span>Zahlen:</span><div class="seg" role="group" aria-label="Zahlenart">
+      ${MODES.map(m=>`<button data-act="mode" data-v="${m[0]}" class="${S.mode===m[0]?'on':''}">${m[1]}</button>`).join('')}</div></div>
+  </div>`;
+}
+
+function viewMenu(){
+  const card=(s,mix)=>`<button class="st${mix?' mix':''}" data-act="start" data-id="${s.id}"><span class="ic">${s.ic}</span><span class="nm">${s.nm}</span><span class="ds">${s.ds}</span></button>`;
+  app.innerHTML=`
+    <a class="back" href="index.html">&larr; Zur &Uuml;bersicht</a>
+    <h1>Gleichungen umstellen</h1>
+    <p class="sub">Zuerst erscheint eine Aufgabe &ndash; rechne sie auf deinem Blatt. Danach klickst du auf &bdquo;L&ouml;sung anzeigen&ldquo; und kannst dir bei Bedarf den Rechenweg erkl&auml;ren lassen.</p>
+    ${settings()}
+    <div class="grid">${card(MIXST,true)}${STATIONS.map(s=>card(s)).join('')}</div>`;
+}
+
+function viewPlay(){
+  const tk=S.task;
+  if(!tk){app.innerHTML=`<button class="back" data-act="menu">&larr; Zur Auswahl</button><p class="sub">Es konnte gerade keine Aufgabe erzeugt werden.</p><div class="btnrow"><button class="btn" data-act="next">Nochmal versuchen</button></div>`;return;}
+  const stn=STATIONS.find(s=>s.id===tk.station);
+  const tag=tk.mode&&modeTag[tk.mode]&&tk.station!=='sach'?`<span class="tag">${modeTag[tk.mode]}</span>`:'';
+  let btns='';
+  if(S.stage===0)btns=`<button class="btn" data-act="adv">Lösung anzeigen</button><button class="btn ghost" data-act="next">Andere Aufgabe</button>`;
+  else if(S.stage===1)btns=`<button class="btn" data-act="adv">Rechenweg erklären</button><button class="btn ghost" data-act="next">Nächste Aufgabe</button>`;
+  else btns=`<button class="btn" data-act="next">Nächste Aufgabe &rarr;</button>`;
+  app.innerHTML=`
+    <button class="back" data-act="menu">&larr; Zur Stationsauswahl</button>
+    <div class="hud"><span class="nm">${stn.nm}${tag}</span><span class="stats">Aufgabe ${S.n}</span></div>
+    ${settings()}
+    <div class="qwrap"><div class="qlabel">${tk.label}</div>${tk.q}</div>
+    <div class="btnrow">${btns}</div>
+    ${S.stage>=1?tk.ans:''}${S.stage>=2?tk.way:''}`;
+}
+
+function render(){S.view==='menu'?viewMenu():viewPlay();}
+
+function advance(){
+  if(S.stage<2){S.stage++;render();
+    const b=app.querySelectorAll('.box');if(b.length)b[b.length-1].scrollIntoView({block:'nearest',behavior:'smooth'});}
+}
+
+app.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const a=b.dataset.act;
+  if(a==='start'){S.st=b.dataset.id;S.n=0;S.view='play';nextTask();render();}
+  else if(a==='lvl'){S.lvl=+b.dataset.v;save();render();}
+  else if(a==='mode'){S.mode=b.dataset.v;save();render();}
+  else if(a==='menu'){S.view='menu';render();}
+  else if(a==='adv')advance();
+  else if(a==='next'){nextTask();render();}
+});
+document.addEventListener('keydown',e=>{
+  if(S.view!=='play'||e.repeat||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key==='Enter'||e.key===' '){
+    if(e.target&&e.target.tagName==='BUTTON')return;
+    e.preventDefault();
+    if(S.stage<2)advance();else{nextTask();render();}
+  }
+});
+
+render();
+})();
+</script>
+</body>
+</html>
