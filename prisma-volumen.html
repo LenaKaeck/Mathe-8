@@ -150,13 +150,13 @@
   <h1>Volumen von Prismen</h1>
 
   <div class="tabs">
-    <button class="tab on" data-tab="gerade">1 &middot; Gerades Prisma stapeln</button>
+    <button class="tab on" data-tab="gerade">1 &middot; Gerades Prisma f&uuml;llen</button>
     <button class="tab" data-tab="schief">2 &middot; Schiefes Prisma</button>
   </div>
 
-  <!-- ========== Modus 1: Stapelmethode ========== -->
+  <!-- ========== Modus 1: Füllen ========== -->
   <section class="stage on" id="stage-gerade">
-    <p class="task">Stapele <b>hauchd&uuml;nne Schichten</b> &uuml;bereinander. Jede Schicht hat dieselbe Grundfl&auml;che und ein winziges Volumen. Wie w&auml;chst das Volumen, wenn der Stapel h&ouml;her wird?</p>
+    <p class="task">F&uuml;lle das Prisma mit Schichten von nur <b>0,05&nbsp;cm Dicke</b>. Jede Schicht hat dieselbe Grundfl&auml;che und ein winziges Volumen. Wie w&auml;chst das Volumen, wenn das Prisma voller wird?</p>
     <div class="layout1">
       <div class="panel"><div class="panel-inner">
         <div class="cv"><canvas id="cv1"></canvas></div>
@@ -167,14 +167,18 @@
         <div class="lbl">Grundfl&auml;che</div>
         <div class="row" id="shapes1"></div>
 
+        <div class="lbl">Prisma</div>
+        <div class="slider"><span>H&ouml;he h des Prismas</span><output id="o-H1"></output>
+          <input type="range" id="s-H1" min="1" max="6" step="0.5" value="4"></div>
+
         <div class="lbl">Schichtdicke</div>
         <div class="row" id="thick1"></div>
 
-        <div class="lbl">Stapeln</div>
-        <div class="slider"><span>H&ouml;he des Stapels</span><output id="o-h1"></output>
-          <input type="range" id="s-h1" min="0" max="6" step="0.05" value="0"></div>
+        <div class="lbl">F&uuml;llen</div>
+        <div class="slider"><span>F&uuml;llh&ouml;he</span><output id="o-h1"></output>
+          <input type="range" id="s-h1" min="0" max="4" step="0.05" value="0"></div>
         <div class="row">
-          <button class="btn main" id="auto">&#9654; Stapeln</button>
+          <button class="btn main" id="auto">&#9654; F&uuml;llen</button>
           <button class="btn" id="clear">Leeren</button>
         </div>
         <div style="margin-top:10px"><label class="chk"><input type="checkbox" id="grid1" checked> 1-cm&sup2;-Raster zeigen</label></div>
@@ -431,62 +435,95 @@
   }
 
   /* ========== Modus 1 ========== */
-  const m1 = {shape: 'rechteck', d: 0.05, n: 0, auto: false, acc: 0};
-  const MAXH = 6;
+  const m1 = {shape: 'rechteck', d: 0.05, H: 4, n: 0, auto: false, acc: 0};
   const v1 = makeView($('#cv1'));
-  const THICKS = [[1, '1 cm'], [0.5, '0,5 cm'], [0.1, '0,1 cm'], [0.05, 'hauchdünn']];
+  const THICKS = [[1, '1 cm'], [0.5, '0,5 cm'], [0.1, '0,1 cm'], [0.05, '0,05 cm']];
+  const maxN = () => Math.round(m1.H / m1.d);
+
+  // Leeres Prisma als "Glas": Kanten und leicht getönte Außenflächen
+  function drawGlass(v, shape, H){
+    const ctx = v.ctx, P = shape.pts, m = P.length;
+    const cen = [CENTER[0], H / 2, CENTER[2]];
+    ctx.lineJoin = 'round';
+    for (let i = 0; i < m; i++){
+      const j = (i + 1) % m;
+      const A = [P[i][0], 0, P[i][1]], B = [P[j][0], 0, P[j][1]], C = [P[j][0], H, P[j][1]], D = [P[i][0], H, P[i][1]];
+      let n = norm(cross(sub(B, A), sub(D, A)));
+      const mid = [(A[0]+B[0]+C[0]+D[0])/4, H/2, (A[2]+B[2]+C[2]+D[2])/4];
+      if (dot(n, sub(mid, cen)) < 0) n = [-n[0], -n[1], -n[2]];
+      const front = v.rot(n[0], n[1], n[2])[2] > 1e-6;
+      path(ctx, [A, B, C, D].map(p => v.proj(p)));
+      if (front){ ctx.fillStyle = 'rgba(255,255,255,.22)'; ctx.fill(); }
+      ctx.setLineDash(front ? [] : [5, 4]);
+      ctx.strokeStyle = front ? 'rgba(30,60,80,.75)' : 'rgba(30,60,80,.4)';
+      ctx.lineWidth = front ? 1.8 : 1.2;
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    const tp = P.map(p => v.proj([p[0], H, p[1]]));
+    path(ctx, tp);
+    ctx.strokeStyle = 'rgba(30,60,80,.75)';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+  }
 
   function draw1(){
     const v = v1, ctx = v.ctx, shape = SHAPES[m1.shape];
     ctx.setTransform(dpr(), 0, 0, dpr(), 0, 0);
     ctx.clearRect(0, 0, v.w, v.h);
     setupCam(v);
-    const grid = $('#grid1').checked, n = m1.n, d = m1.d;
+    const grid = $('#grid1').checked, n = m1.n, d = m1.d, H = m1.H;
     drawGround(v, shape, grid && n === 0);
     const thin = n > 14, vthin = n > 50;
     for (let k = 0; k < n; k++){
       drawLayer(v, shape, {y0: k * d, y1: (k + 1) * d, ob: [0, 0], ot: [0, 0], ci: k},
                 {grid: grid && k === n - 1, thin, vthin});
     }
-    if (n > 0){
-      const p = shape.pts[shape.mark], h = n * d;
-      const a = v.proj([p[0], 0, p[1]]), b = v.proj([p[0], h, p[1]]);
-      line(ctx, a, b, '#b98a14', [6, 4], 2.5);
-      label(ctx, 'h = ' + fmt(h) + ' cm', (a[0] + b[0]) / 2 - 42, (a[1] + b[1]) / 2, '#8a6200');
-    }
+    drawGlass(v, shape, H);
+    const p = shape.pts[shape.mark];
+    const a = v.proj([p[0], 0, p[1]]), b = v.proj([p[0], H, p[1]]);
+    line(ctx, a, b, '#b98a14', [6, 4], 2.5);
+    label(ctx, 'h = ' + fmt(H) + ' cm', (a[0] + b[0]) / 2 - 42, (a[1] + b[1]) / 2, '#8a6200');
   }
 
   function update1(){
-    const shape = SHAPES[m1.shape], G = shape.area, d = m1.d, n = m1.n, h = n * d;
+    const shape = SHAPES[m1.shape], G = shape.area, d = m1.d, n = m1.n, h = n * d, H = m1.H;
     const gd = G * d;
+    $('#o-H1').textContent = fmt(H) + ' cm';
     $('#o-h1').textContent = fmt(h) + ' cm';
-    $('#s-h1').step = d;
-    $('#s-h1').value = h;
+    const sl = $('#s-h1');
+    sl.max = H; sl.step = d; sl.value = h;
     $('#facts1').innerHTML = 'Grundfl&auml;che <b>G = ' + fmt(G) + ' cm&sup2;</b><br>' +
       'Eine Schicht (' + fmt(d) + '&nbsp;cm dick): ' + fmt(G) + ' cm&sup2; &middot; ' + fmt(d) + ' cm = <b>' + fmt(gd, 3) + ' cm&sup3;</b>';
-    let rows = '<tr><th>H&ouml;he h</th><th>Schichten</th><th>Volumen V</th></tr>';
+    let rows = '<tr><th>F&uuml;llh&ouml;he</th><th>Schichten</th><th>Volumen V</th></tr>';
     const perCm = Math.round(1 / d);
     for (let c = 1; c <= Math.floor(h + 1e-9); c++){
       rows += '<tr' + (Math.abs(h - c) < 1e-9 ? ' class="cur"' : '') + '><td>' + c + ' cm</td><td>' + (c * perCm) + '</td><td>' + fmt(c * G) + ' cm&sup3; = ' + fmt(G) + ' &middot; ' + c + '</td></tr>';
     }
     $('#tbl1').innerHTML = h >= 1 - 1e-9 ? rows : '';
+    const full = n >= maxN();
     $('#big1').innerHTML = n
-      ? '<small>' + n + ' Schicht' + (n > 1 ? 'en' : '') + ' &times; ' + fmt(gd, 3) + ' cm&sup3; pro Schicht</small>V = G &middot; h = <span class="y">' + fmt(G) + ' cm&sup2; &middot; ' + fmt(h) + ' cm = ' + fmt(h * G) + ' cm&sup3;</span>'
-      : '<small>Noch keine Schicht &mdash; tippe auf &bdquo;Stapeln&ldquo; oder ziehe den Regler.</small>';
+      ? '<small>' + n + ' Schicht' + (n > 1 ? 'en' : '') + ' &times; ' + fmt(gd, 3) + ' cm&sup3; pro Schicht' + (full ? ' &mdash; Prisma ist voll' : '') + '</small>V = G &middot; h = <span class="y">' + fmt(G) + ' cm&sup2; &middot; ' + fmt(h) + ' cm = ' + fmt(h * G) + ' cm&sup3;</span>'
+      : '<small>Das Prisma ist noch leer &mdash; tippe auf &bdquo;F&uuml;llen&ldquo; oder ziehe den Regler.</small>';
     $('#clear').disabled = n <= 0;
     dirty = true;
   }
 
-  const maxN = () => Math.round(MAXH / m1.d);
   function setN(n){
     m1.n = Math.max(0, Math.min(maxN(), Math.round(n)));
     update1();
   }
   function stopAuto(){
     m1.auto = false;
-    $('#auto').innerHTML = '&#9654; Stapeln';
+    $('#auto').innerHTML = '&#9654; Füllen';
   }
 
+  $('#s-H1').oninput = e => {
+    stopAuto();
+    const h = m1.n * m1.d;
+    m1.H = +e.target.value;
+    setN(Math.min(h, m1.H) / m1.d);
+  };
   $('#s-h1').oninput = e => { stopAuto(); setN(+e.target.value / m1.d); };
   $('#clear').onclick = () => { stopAuto(); setN(0); };
   $('#auto').onclick = () => {
