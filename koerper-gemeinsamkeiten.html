@@ -31,7 +31,7 @@
     color:var(--chalk);
     padding: 28px 20px 48px;
   }
-  .wrap{ max-width: 1100px; margin: 0 auto; }
+  .wrap{ max-width: 1300px; margin: 0 auto; }
 
   a.back{
     color:var(--chalk-dim); text-decoration:none; font-size:.85rem;
@@ -60,15 +60,15 @@
   /* Objekt-Karten */
   .grid{
     display:grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 16px;
   }
-  @media (max-width: 900px){ .grid{ grid-template-columns: repeat(3, 1fr);} }
+  @media (max-width: 1000px){ .grid{ grid-template-columns: repeat(3, 1fr);} }
   @media (max-width: 560px){ .grid{ grid-template-columns: repeat(2, 1fr); gap:12px; } }
 
   .obj{
     position:relative;
-    display:flex; flex-direction:column; align-items:center;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
     background: var(--chalk);
     color:#2a2a2a;
     border:4px solid transparent;
@@ -187,7 +187,7 @@
   <a class="back" href="index.html">&larr; Zur Übersicht</a>
   <h1>Was haben diese Körper gemeinsam?</h1>
   <p class="task">
-    Schaut euch die 10 Objekte genau an &mdash; <b>zieht mit Maus oder Finger</b> auf einem Objekt, um es zu drehen.
+    Schaut euch die 18 Objekte genau an &mdash; <b>zieht mit Maus oder Finger</b> auf einem Objekt, um es zu drehen.
     <b>Findet eine Gemeinsamkeit</b> und wählt alle Objekte aus, die sie haben (einfach antippen).
     Nennt die Gemeinsamkeit &mdash; danach kann die nächste Gruppe gebildet werden.
     Ein Objekt darf auch in mehreren Gruppen vorkommen. <b>Besonders interessant:</b> eine Gruppe von Körpern, die sich ähnlich „aufbauen“.
@@ -271,9 +271,10 @@ function makePart(verts, faces, o = {}){
 }
 
 /* Prisma: Vieleck poly (2D) entlang einer Achse extrudiert. axis 'y': Vieleck in xz, 'z': Vieleck in xy */
-function prism(poly, len, axis, c, decals = []){
+function prism(poly, len, axis, c, decals = [], shear = [0,0]){
   const n = poly.length;
-  const m = (a,b,t) => axis === 'y' ? [a,t,b] : [a,b,t];
+  // shear: seitliche Verschiebung pro Längeneinheit (schiefes Prisma, nur axis 'y')
+  const m = (a,b,t) => axis === 'y' ? [a+shear[0]*t,t,b+shear[1]*t] : [a,b,t];
   const verts = [];
   poly.forEach(p => verts.push(m(p[0],p[1],-len/2)));
   poly.forEach(p => verts.push(m(p[0],p[1], len/2)));
@@ -304,16 +305,18 @@ function pyramid(base, apex, c){
 }
 
 /* Zylinder mit farbigen Bändern: levels = [[y, farbe-des-Bandes-darüber], ...] von unten nach oben */
-function cylinder(r, levels, capColor, N = 36){
+function cylinder(r, levels, capColor, N = 36, off = [0,0]){
+  // levels-Eintrag: [y, Farbe, optionaler Radius]; capColor: Farbe oder [unten, oben]
+  const caps = Array.isArray(capColor) ? capColor : [capColor, capColor];
   const verts = [], faces = [];
-  levels.forEach(l => { for(let k=0;k<N;k++){ const a=2*Math.PI*k/N; verts.push([r*Math.cos(a), l[0], r*Math.sin(a)]); } });
+  levels.forEach(l => { const rr = l[2] ?? r; for(let k=0;k<N;k++){ const a=2*Math.PI*k/N; verts.push([off[0]+rr*Math.cos(a), l[0], off[1]+rr*Math.sin(a)]); } });
   for(let li=0; li<levels.length-1; li++)
     for(let k=0;k<N;k++){
       const j=(k+1)%N;
       faces.push({i:[li*N+k, li*N+j, (li+1)*N+j, (li+1)*N+k], c:levels[li][1], smooth:true});
     }
-  faces.push({i:[...Array(N).keys()], c:capColor});
-  faces.push({i:[...Array(N).keys()].map(k=>(levels.length-1)*N+k), c:capColor});
+  faces.push({i:[...Array(N).keys()], c:caps[0]});
+  faces.push({i:[...Array(N).keys()].map(k=>(levels.length-1)*N+k), c:caps[1]});
   return makePart(verts, faces);
 }
 
@@ -413,7 +416,55 @@ const OBJECTS = [
       ], {edges:true})];
     }}
 ];
-const ORDER = ['toblerone','dose','pyramide','wuerfel','eis','milch','ball','sechseck','zelt','tetraeder'];
+/* ----- Streitfälle zum Diskutieren ----- */
+OBJECTS.push(
+  { id:'haus', name:'Haus', kind:'Gebäude', view:{yaw:0.6, pitch:0.3},
+    build: () => {
+      const z = 0.7 + 0.004;
+      const poly = [[-0.8,-0.7],[0.8,-0.7],[0.8,0.3],[0,1.0],[-0.8,0.3]];
+      return [prism(poly, 1.4, 'z', {cap:'#F0D9A8', side:['#9a7a52','#E2C58C','#C0453A','#D4574B','#D9BB7F']}, [
+        {pts:[[-0.2,-0.7,z],[0.2,-0.7,z],[0.2,-0.1,z],[-0.2,-0.1,z]], c:'#7a4c2b'},
+        {pts:[[0.4,-0.1,z],[0.65,-0.1,z],[0.65,0.15,z],[0.4,0.15,z]], c:'#89B7CB'},
+        {pts:[[-0.65,-0.1,z],[-0.4,-0.1,z],[-0.4,0.15,z],[-0.65,0.15,z]], c:'#89B7CB'}
+      ])];
+    }},
+  { id:'goldbarren', name:'Goldbarren', kind:'Wertgegenstand', view:{yaw:0.7, pitch:0.4},
+    build: () => [prism([[-0.55,-0.32],[0.55,-0.32],[0.38,0.32],[-0.38,0.32]], 2.0, 'z',
+      {cap:'#F5CF5A', side:['#C99A1E','#E8B83C','#DDAA2E','#E8B83C']})]},
+  { id:'schief', name:'Schiefes Hochhaus', kind:'Gebäude', view:{yaw:0.6, pitch:0.2},
+    build: () => [prism(sq(0.5), 2.4, 'y', {cap:'#D5E4EC', side:['#7FA8C4','#A9C8DC']}, [], [0.25, 0])]},
+  { id:'pralinen', name:'Pralinenschachtel', kind:'Verpackung', view:{yaw:0.4, pitch:0.55},
+    build: () => {
+      const oct = Array.from({length:8}, (_,k) => [1.05*Math.cos(Math.PI/4*k + Math.PI/8), 1.05*Math.sin(Math.PI/4*k + Math.PI/8)]);
+      const y = 0.225 + 0.004, g = 0.62;
+      const inner = Array.from({length:8}, (_,k) => [g*Math.cos(Math.PI/4*k + Math.PI/8), y, g*Math.sin(Math.PI/4*k + Math.PI/8)]);
+      return [prism(oct, 0.45, 'y', {cap:'#D9442F', side:['#A32A22','#C0392B']}, [{pts:inner, c:'#E8C25B'}])];
+    }},
+  { id:'topf', name:'Blumentopf', kind:'Garten', view:{yaw:0, pitch:0.5},
+    build: () => [cylinder(0.6, [[-0.8,'#C8643A',0.62],[0.8,'#D9784A',1.0]], ['#B2552E','#5a3d26'])]},
+  { id:'kristall', name:'Kristall', kind:'Mineral', view:{yaw:0.4, pitch:0.3},
+    build: () => {
+      const V = [[1,0,0],[0,0,1],[-1,0,0],[0,0,-1],[0,1.45,0],[0,-1.45,0]];
+      const top = ['#C9A6E8','#B58BDD','#D7BBF0','#A777D2'], bot = ['#9468C4','#8355B8','#A276CE','#7A4DB0'];
+      const faces = [];
+      for(let k=0;k<4;k++){ faces.push({i:[k,(k+1)%4,4], c:top[k]}); faces.push({i:[k,(k+1)%4,5], c:bot[k]}); }
+      return [makePart(V, faces, {edges:true})];
+    }},
+  { id:'lego', name:'Legostein', kind:'Spielzeug', view:{yaw:0.6, pitch:0.5},
+    build: () => {
+      const parts = [prism([[-0.8,-0.4],[0.8,-0.4],[0.8,0.4],[-0.8,0.4]], 0.5, 'y', {cap:'#E0443A', side:'#C9362D'})];
+      [-0.6,-0.2,0.2,0.6].forEach(x => [-0.2,0.2].forEach(z =>
+        parts.push(cylinder(0.14, [[0.25,'#D13B31'],[0.37,'#D13B31']], '#E8574D', 24, [x,z]))));
+      return parts;
+    }},
+  { id:'bleistift', name:'Bleistift', kind:'Schreibwaren', view:{yaw:0.5, pitch:0.25},
+    build: () => [
+      prism(hexa(0.45), 2.0, 'y', {cap0:'#E58FA8', cap1:'#E7C9A0', side:['#F2C230','#E3B020','#F7D057']}),
+      cone(0.39, 1.0, 1.5, {side:'#E7C9A0', cap:'#E7C9A0'}),
+      cone(0.19, 1.27, 1.62, {side:'#3a3a3a', cap:'#3a3a3a'})
+    ]}
+);
+const ORDER = ['toblerone','dose','pyramide','wuerfel','eis','milch','topf','ball','sechseck','zelt','lego','tetraeder','haus','kristall','pralinen','goldbarren','bleistift','schief'];
 OBJECTS.sort((a,b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
 
 /* ---------- Zeichnen ---------- */
@@ -633,10 +684,11 @@ const TIPS = [
   'Dreht die Körper und betrachtet sie von allen Seiten. Welche Körper haben nur <b>ebene (gerade) Flächen</b>, welche haben auch gekrümmte?',
   'Unter den Körpern mit ebenen Flächen: Schaut auf die <b>Form der Flächen</b>. Gibt es Flächen, die genau gleich aussehen?',
   'Sucht Körper mit <b>zwei gleich großen, parallelen Flächen</b> (Grund- und Deckfläche) &ndash; wie Boden und Decke. Tipp: „Verdeckte Kanten anzeigen“ hilft beim Zählen.',
-  'Wie sind die übrigen Flächen? Bei diesen Körpern sind es alles <b>Rechtecke</b>, die Grund- und Deckfläche verbinden.',
-  'Stellt euch vor, ihr schneidet den Körper <b>parallel zur Grundfläche</b> durch: Die Schnittfläche sieht immer genau wie die Grundfläche aus. Welche Körper können das?'
+  'Wie sind die übrigen Flächen? Bei diesen Körpern sind es alles <b>Rechtecke oder Parallelogramme</b>, die Grund- und Deckfläche verbinden.',
+  'Stellt euch vor, ihr schneidet den Körper <b>parallel zur Grundfläche</b> durch: Die Schnittfläche sieht immer genau wie die Grundfläche aus. Welche Körper können das?',
+  '<b>Streitfälle:</b> Legostein (Noppen), Bleistift (Spitze), Blumentopf (oben breiter als unten), Kristall, Hochhaus (schief), Haus, Zelt und Goldbarren. Gehören sie zur Gruppe? Begründet mit euren Merkmalen!'
 ];
-const PRISMS = ['toblerone','milch','zelt','wuerfel','sechseck'];
+const PRISMS = ['toblerone','milch','zelt','wuerfel','sechseck','haus','goldbarren','schief','pralinen'];
 let tipsShown = 0, solOn = false;
 const tipsEl = document.getElementById('tips');
 const tipBtn = document.getElementById('tipBtn');

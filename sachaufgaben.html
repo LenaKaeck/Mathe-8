@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sachaufgaben: Gleichungen und Ungleichungen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-1:#24402F; --bg-2:#1B3323; --chalk:#F3EFE3; --chalk-dim:#C9D6C4;
+    --yellow:#E8C25B; --coral:#E2836B; --green:#93C08C; --blue:#89B7CB;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{min-height:100%;}
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,0.035) 0, transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(255,255,255,0.03) 0, transparent 40%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    font-family:'Space Grotesk', sans-serif; color:var(--chalk); padding:24px 16px 40px;
+  }
+  .board{ width:100%; max-width:920px; margin:0 auto; }
+  .frame{
+    background:repeating-linear-gradient(45deg,#8a5a34,#8a5a34 6px,#7a4c2b 6px,#7a4c2b 12px);
+    border-radius:22px; padding:10px; box-shadow:var(--shadow);
+  }
+  .panel{
+    background:radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.05), transparent 60%), var(--bg-1);
+    border-radius:16px; padding:28px 26px 26px; position:relative; min-height:560px;
+  }
+  .panel::before{
+    content:""; position:absolute; inset:0; border-radius:16px;
+    background-image:radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size:14px 14px; opacity:.35; pointer-events:none;
+  }
+  .panel > *{ position:relative; z-index:1; }
+
+  h1{ font-family:'Kalam',cursive; font-weight:700; font-size:clamp(1.7rem,5vw,2.5rem); margin:0 0 6px; transform:rotate(-0.6deg); }
+  .sub{ color:var(--chalk-dim); font-size:.95rem; margin:0 0 16px; max-width:64ch; line-height:1.5; }
+  .back{ color:var(--chalk-dim); font-size:.85rem; text-decoration:none; display:inline-block; margin-bottom:12px; }
+  .back:hover{ color:var(--yellow); }
+
+  /* Kopf: Münzen + Fortschritt */
+  .top{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .coins{ font-weight:700; font-size:1.1rem; background:rgba(0,0,0,.2); border:1.5px solid var(--yellow); color:var(--yellow); border-radius:999px; padding:6px 16px; font-variant-numeric:tabular-nums; }
+  .map{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px; }
+  .map button{
+    font-family:inherit; font-weight:700; font-size:.82rem; width:34px; height:34px; border-radius:50%;
+    border:1.5px solid rgba(243,239,227,.3); background:rgba(255,255,255,.04); color:var(--chalk-dim); cursor:pointer;
+  }
+  .map button:disabled{ opacity:.35; cursor:not-allowed; }
+  .map button.ok{ background:var(--green); color:#173019; border-color:var(--green); }
+  .map button.no{ background:var(--coral); color:#3b1a12; border-color:var(--coral); }
+  .map button.cur{ border-color:var(--yellow); color:var(--yellow); box-shadow:0 0 0 2px rgba(232,194,91,.35); }
+  .map button.sel{ outline:2px solid var(--blue); outline-offset:2px; }
+
+  .tag{ display:inline-block; font-size:.72rem; font-weight:700; color:var(--bg-1); background:var(--yellow); border-radius:5px; padding:2px 8px; margin-right:6px; vertical-align:middle; }
+  .tag.t2{ background:var(--blue); } .tag.t3{ background:var(--coral); }
+  .lvl{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; color:var(--chalk-dim); font-size:.9rem; }
+  .ttl{ font-family:'Kalam',cursive; font-weight:700; font-size:clamp(1.4rem,4vw,1.9rem); margin:0 0 10px; }
+  .story{ font-size:clamp(1.05rem,2.8vw,1.3rem); line-height:1.65; max-width:60ch; margin:0 0 14px; }
+
+  .btn{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1rem; background:var(--yellow); color:#2B2110;
+    border:none; border-radius:10px; padding:12px 24px; cursor:pointer; box-shadow:0 4px 0 #b58f37;
+    transition:transform .08s, box-shadow .08s;
+  }
+  .btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #b58f37; }
+  .btn:focus-visible,.map button:focus-visible,.tip:focus-visible{ outline:2px solid var(--blue); outline-offset:3px; }
+  .btn.ghost{ background:transparent; color:var(--chalk); border:1.5px solid rgba(243,239,227,.4); box-shadow:none; }
+  .btnrow{ display:flex; gap:12px; flex-wrap:wrap; margin:16px 0 4px; }
+
+  /* Tipps */
+  .tips{ display:flex; flex-direction:column; gap:8px; margin:6px 0 4px; }
+  .tiphd{ font-size:.85rem; color:var(--chalk-dim); }
+  .tipbtns{ display:flex; gap:8px; flex-wrap:wrap; }
+  .tip{
+    font-family:inherit; font-weight:600; font-size:.88rem; color:var(--chalk); background:rgba(255,255,255,.04);
+    border:1.5px dashed rgba(243,239,227,.4); border-radius:10px; padding:8px 14px; cursor:pointer;
+  }
+  .tip:hover{ background:rgba(255,255,255,.09); }
+  .tipbox{ background:rgba(232,194,91,.10); border-left:4px solid var(--yellow); border-radius:8px; padding:10px 14px; line-height:1.55; font-size:.97rem; }
+  .tipbox b{ color:var(--yellow); }
+
+  /* Antwort */
+  .box{ margin-top:16px; border-radius:12px; padding:16px 18px; border:1.5px solid; }
+  .box.chk{ background:rgba(232,194,91,.08); border-color:var(--yellow); }
+  .box.good{ background:rgba(147,192,140,.14); border-color:var(--green); }
+  .box.bad{ background:rgba(226,131,107,.12); border-color:var(--coral); }
+  .box.way{ background:rgba(137,183,203,.10); border-color:var(--blue); }
+  .box .hd{ font-weight:700; margin-bottom:8px; }
+  .box.chk .hd{ color:var(--yellow); } .box.good .hd{ color:var(--green); } .box.bad .hd{ color:var(--coral); } .box.way .hd{ color:var(--blue); }
+  .ans{ font-family:'Kalam',cursive; font-weight:700; font-size:clamp(1.25rem,3.6vw,1.7rem); line-height:2.1; }
+  .ans input{
+    font-family:'Kalam',cursive; font-weight:700; font-size:1em; width:3.6em; text-align:center; color:var(--chalk);
+    background:rgba(0,0,0,.25); border:none; border-bottom:2.5px solid var(--yellow); border-radius:6px 6px 0 0; padding:0 4px; margin:0 3px;
+  }
+  .ans input:focus{ outline:none; background:rgba(0,0,0,.4); }
+  .ans input.r{ border-bottom-color:var(--green); } .ans input.w{ border-bottom-color:var(--coral); color:var(--coral); }
+  .msg{ margin:8px 0 0; line-height:1.55; }
+  .msg b{ color:var(--chalk); }
+
+  /* Lösungsweg */
+  .way .st{ margin:10px 0; line-height:1.6; color:var(--chalk-dim); }
+  .way .st > b{ color:var(--chalk); }
+  .calc{ margin:6px 0 0 6px; font-family:'Kalam',cursive; font-weight:700; font-size:1.3rem; color:var(--chalk); }
+  .calc .row{ display:flex; gap:1em; flex-wrap:wrap; align-items:baseline; }
+  .calc .o{ color:var(--coral); font-size:.82em; font-family:'Space Grotesk',sans-serif; font-weight:600; }
+  .eq{ font-family:'Kalam',cursive; font-weight:700; font-size:1.2em; color:var(--chalk); }
+  .frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .12em; line-height:1.1; font-size:.85em; }
+  .frac .n{ border-bottom:.07em solid currentColor; padding:0 .25em .06em; }
+  .frac .d{ padding:.06em .25em 0; }
+
+  .final{ text-align:center; padding:30px 0 10px; }
+  .final .big{ font-family:'Kalam',cursive; font-weight:700; font-size:clamp(2rem,7vw,3.2rem); color:var(--yellow); }
+  .hidden{ display:none !important; }
+  @media (max-width:640px){ .panel{ padding:22px 14px 20px; } .box{ padding:14px 12px; } }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+<div class="board"><div class="frame"><div class="panel" id="app"></div></div></div>
+
+<script>
+(function(){
+'use strict';
+
+const fr=(n,d)=>'<span class="frac"><span class="n">'+n+'</span><span class="d">'+d+'</span></span>';
+const NU='ℕ';
+
+/* ============ Aufgaben ============
+   t: Titel, lv: 1/2/3, txt: Aufgabentext, tips: 2-3 Tipps,
+   ans: Antwortsatz mit {} für Lücken, sol: richtige Werte,
+   w: Lösungsweg (v=Variable, a=Ansatz, d=Definitionsmenge optional, c=[[Zeile, Operation],...], p=Probe, L=Lösungsmenge, s=Antwortsatz) */
+const TASKS=[
+/* ---- leicht ---- */
+{t:'Kinokarten',lv:1,
+ txt:'Emil kauft für sich und drei Freunde Kinokarten. Zusätzlich kauft er eine große Tüte Popcorn für 6 €. Insgesamt bezahlt er 38 €. Wie teuer ist eine Kinokarte?',
+ tips:['Wie viele Kinokarten kauft Emil insgesamt? Denk daran, dass er selbst auch dabei ist.','Nenne den Preis einer Karte <b>x</b>. Dann kosten alle Karten zusammen „Anzahl mal x“.','Alle Karten plus das Popcorn ergeben zusammen 38 €. Stelle daraus eine Gleichung auf.'],
+ ans:'Eine Kinokarte kostet {} €.',sol:[8],
+ w:{v:'x = Preis einer Kinokarte in €',a:'Emil kauft 4 Karten (für sich und drei Freunde) und Popcorn für 6 €. Zusammen kostet das 38 €: <span class="eq">4x + 6 = 38</span>',
+  c:[['4x + 6 = 38','| − 6'],['4x = 32','| : 4'],['x = 8','']],p:'4 · 8 + 6 = 38 ✓',L:'L = {8}',s:'Eine Kinokarte kostet 8 €.'}},
+{t:'Sparen',lv:1,
+ txt:'Hannah hat bereits 45 € gespart. Ab jetzt legt sie jede Woche 5 € dazu. Nach wie vielen Wochen hat sie zum ersten Mal mehr als 100 €?',
+ tips:['Sei <b>x</b> die Anzahl der Wochen. Wie viel Geld hat Hannah nach x Wochen?','„Mehr als 100 €“ – welches Zeichen brauchst du dafür: &lt;, &gt;, ≤ oder ≥?','Löse die Ungleichung. Achtung: Gefragt ist die <b>kleinste ganze Zahl</b> von Wochen, die passt.'],
+ ans:'Nach {} Wochen hat Hannah zum ersten Mal mehr als 100 €.',sol:[12],
+ w:{v:'x = Anzahl der Wochen, x ∈ '+NU,a:'Nach x Wochen hat Hannah 45 + 5x Euro. „Mehr als 100 €“ bedeutet „> 100“: <span class="eq">45 + 5x &gt; 100</span>',
+  c:[['45 + 5x > 100','| − 45'],['5x > 55','| : 5'],['x > 11','']],p:'Nach 11 Wochen hat sie genau 100 €, also nicht mehr als 100 €. Nach 12 Wochen hat sie 105 € ✓',L:'L = {12; 13; 14; …}',s:'Nach 12 Wochen hat Hannah zum ersten Mal mehr als 100 €.'}},
+{t:'Zahlenrätsel',lv:1,
+ txt:'Wenn man eine Zahl verdreifacht und vom Ergebnis 7 abzieht, erhält man 32. Wie heißt die Zahl?',
+ tips:['Nenne die gesuchte Zahl <b>x</b>.','„Verdreifachen“ heißt: mal 3. „Davon 7 abziehen“ heißt: − 7. Schreibe das als Term auf.','Der Term ergibt 32. Löse die Gleichung mit Umkehroperationen.'],
+ ans:'Die gesuchte Zahl heißt {}.',sol:[13],
+ w:{v:'x = gesuchte Zahl',a:'„Verdreifachen“ ergibt 3x, „davon 7 abziehen“ ergibt 3x − 7: <span class="eq">3x − 7 = 32</span>',
+  c:[['3x − 7 = 32','| + 7'],['3x = 39','| : 3'],['x = 13','']],p:'3 · 13 − 7 = 39 − 7 = 32 ✓',L:'L = {13}',s:'Die gesuchte Zahl heißt 13.'}},
+{t:'Aufzug',lv:1,
+ txt:'Ein Lastenaufzug darf höchstens 630 kg transportieren. Der Hausmeister wiegt 90 kg und möchte mit dem Aufzug Pakete nach oben bringen. Jedes Paket wiegt 20 kg. Wie viele Pakete darf er höchstens mitnehmen?',
+ tips:['Sei <b>x</b> die Anzahl der Pakete. Was wiegt alles zusammen (Hausmeister + Pakete)?','„Höchstens 630 kg“ bedeutet: das Gesamtgewicht darf 630 kg nicht überschreiten. Welches Zeichen passt?','Löse die Ungleichung und gib die größte ganze Zahl an, die erlaubt ist.'],
+ ans:'Der Hausmeister darf höchstens {} Pakete mitnehmen.',sol:[27],
+ w:{v:'x = Anzahl der Pakete, x ∈ '+NU,a:'Das Gesamtgewicht ist 90 + 20x Kilogramm. „Höchstens 630 kg“ bedeutet „≤ 630“: <span class="eq">90 + 20x ≤ 630</span>',
+  c:[['90 + 20x ≤ 630','| − 90'],['20x ≤ 540','| : 20'],['x ≤ 27','']],p:'Mit 27 Paketen: 90 + 540 = 630 kg ✓. Mit 28 Paketen: 650 kg, das ist zu viel.',L:'L = {1; 2; 3; …; 27}',s:'Der Hausmeister darf höchstens 27 Pakete mitnehmen.'}},
+{t:'Rechteck',lv:1,
+ txt:'Ein rechteckiges Grundstück ist 7 m länger als breit. Sein Umfang beträgt 54 m. Wie lang und wie breit ist das Grundstück?',
+ tips:['Nenne die Breite <b>x</b>. Wie lang ist das Grundstück dann (in Abhängigkeit von x)?','Der Umfang eines Rechtecks ist 2 · Breite + 2 · Länge.','Setze Breite und Länge in die Umfangsformel ein, löse die Klammer auf und fasse zusammen. Vergiss nicht, am Ende auch die Länge auszurechnen.'],
+ ans:'Das Grundstück ist {} m breit und {} m lang.',sol:[10,17],
+ w:{v:'x = Breite des Grundstücks in m. Die Länge ist dann x + 7.',a:'Umfang = 2 · Breite + 2 · Länge: <span class="eq">2x + 2(x + 7) = 54</span>',
+  c:[['2x + 2(x + 7) = 54','Klammer auflösen'],['2x + 2x + 14 = 54','zusammenfassen'],['4x + 14 = 54','| − 14'],['4x = 40','| : 4'],['x = 10','']],p:'Breite 10 m, Länge 17 m: 2 · 10 + 2 · 17 = 20 + 34 = 54 ✓',L:'L = {10}',s:'Das Grundstück ist 10 m breit und 17 m lang.'}},
+/* ---- mittel ---- */
+{t:'Alter',lv:2,
+ txt:'Frau Weber ist heute dreimal so alt wie ihre Tochter Clara. In 12 Jahren wird sie nur noch doppelt so alt sein wie Clara. Wie alt sind die beiden heute?',
+ tips:['Nenne Claras Alter heute <b>x</b>. Wie alt ist dann Frau Weber heute?','Wie alt sind beide in 12 Jahren? Bei beiden kommen 12 Jahre dazu.','In 12 Jahren gilt: Alter der Mutter = 2 · Alter von Clara. Beachte die Klammer, wenn du „2 mal (Claras Alter in 12 Jahren)“ aufschreibst.'],
+ ans:'Clara ist heute {} Jahre alt, Frau Weber ist {} Jahre alt.',sol:[12,36],
+ w:{v:'x = Claras Alter heute in Jahren. Frau Weber ist heute 3x Jahre alt.',a:'In 12 Jahren ist Clara x + 12 und Frau Weber 3x + 12 Jahre alt. Dann ist die Mutter doppelt so alt: <span class="eq">3x + 12 = 2(x + 12)</span>',
+  c:[['3x + 12 = 2(x + 12)','Klammer auflösen'],['3x + 12 = 2x + 24','| − 2x'],['x + 12 = 24','| − 12'],['x = 12','']],p:'Heute 12 und 36 Jahre. In 12 Jahren 24 und 48 Jahre, und 48 = 2 · 24 ✓',L:'L = {12}',s:'Clara ist heute 12 Jahre alt, Frau Weber ist 36 Jahre alt.'}},
+{t:'Fitnessstudio',lv:2,
+ txt:'Studio A verlangt eine einmalige Aufnahmegebühr von 30 € und dann 25 € pro Monat. Studio B hat keine Aufnahmegebühr, kostet aber 31 € pro Monat. Ab welcher Mitgliedsdauer in vollen Monaten ist Studio A insgesamt günstiger?',
+ tips:['Sei <b>x</b> die Anzahl der Monate. Stelle für beide Studios einen Term für die Gesamtkosten auf.','Studio A soll <b>günstiger</b> sein als Studio B. Welches Zeichen steht zwischen den beiden Termen?','Bringe alle x auf eine Seite. Wenn du durch eine negative Zahl teilst, musst du das Ungleichheitszeichen umdrehen!'],
+ ans:'Ab einer Mitgliedsdauer von {} Monaten ist Studio A günstiger.',sol:[6],
+ w:{v:'x = Mitgliedsdauer in Monaten, x ∈ '+NU,a:'Kosten Studio A: 30 + 25x. Kosten Studio B: 31x. A soll günstiger sein: <span class="eq">30 + 25x &lt; 31x</span>',
+  c:[['30 + 25x < 31x','| − 31x'],['30 − 6x < 0','| − 30'],['−6x < −30','| : (−6), Zeichen umdrehen!'],['x > 5','']],p:'Nach 5 Monaten kosten beide 155 €. Nach 6 Monaten kostet A 180 € und B 186 € ✓',L:'L = {6; 7; 8; …}',s:'Ab einer Mitgliedsdauer von 6 Monaten ist Studio A günstiger.'}},
+{t:'Aufeinanderfolgende Zahlen',lv:2,
+ txt:'Die Summe von drei aufeinanderfolgenden natürlichen Zahlen ist 141. Wie heißen die drei Zahlen?',
+ tips:['Nenne die kleinste der drei Zahlen <b>x</b>. Wie heißt die nächste Zahl, und die danach?','Die Summe der drei Zahlen ist 141. Schreibe die Summe als Gleichung auf.','Trage deine Zahlen in der Antwort <b>der Größe nach</b> ein (kleinste zuerst).'],
+ ans:'Die drei Zahlen heißen {}, {} und {}.',sol:[46,47,48],
+ w:{v:'x = kleinste der drei Zahlen. Die anderen beiden sind x + 1 und x + 2.',a:'<span class="eq">x + (x + 1) + (x + 2) = 141</span>',
+  c:[['x + x + 1 + x + 2 = 141','zusammenfassen'],['3x + 3 = 141','| − 3'],['3x = 138','| : 3'],['x = 46','']],p:'46 + 47 + 48 = 141 ✓',L:'L = {46}',s:'Die drei Zahlen heißen 46, 47 und 48.'}},
+{t:'Klassenfahrt',lv:2,
+ txt:'Für eine Klassenfahrt kostet der Bus insgesamt 480 €. Die Buskosten werden gleichmäßig auf alle Schülerinnen und Schüler aufgeteilt. Zusätzlich zahlt jede Person 35 € für die Unterkunft. Jede Person zahlt insgesamt 59 €. Wie viele Schülerinnen und Schüler fahren mit?',
+ tips:['Sei <b>x</b> die Anzahl der Schülerinnen und Schüler. Wie viel Euro muss jede Person für den Bus zahlen?','Der Busanteil ist ein Bruch mit x im Nenner. Dazu kommen 35 € Unterkunft. Das Ganze ergibt 59 €.','Löse zuerst die 35 auf der linken Seite. Dann kannst du über Kreuz multiplizieren oder mit x multiplizieren.'],
+ ans:'Es fahren {} Schülerinnen und Schüler mit.',sol:[20],
+ w:{v:'x = Anzahl der Schülerinnen und Schüler. Jede Person zahlt 480/x Euro für den Bus.',a:'Busanteil + Unterkunft = 59 €: <span class="eq">'+fr(480,'x')+' + 35 = 59</span>',d:'Der Nenner x darf nicht 0 sein: D = ℕ \\ {0}',
+  c:[['480/x + 35 = 59','| − 35'],['480/x = 24','| · x'],['480 = 24x','| : 24'],['x = 20','']],p:'480 : 20 = 24, und 24 + 35 = 59 ✓',L:'L = {20}',s:'Es fahren 20 Schülerinnen und Schüler mit.'}},
+{t:'Testpunkte',lv:2,
+ txt:'Jonas hat in den ersten drei Mathetests 14, 11 und 9 Punkte erreicht. In jedem Test gibt es höchstens 20 Punkte. Nach dem vierten Test möchte er im Durchschnitt mindestens 12 Punkte haben. Wie viele Punkte muss er im vierten Test erreichen?',
+ tips:['Sei <b>x</b> die Punktzahl im vierten Test. Wie berechnet man einen Durchschnitt aus vier Werten?','„Mindestens 12“ bedeutet: der Durchschnitt ist 12 oder mehr. Welches Zeichen brauchst du?','Multipliziere die Ungleichung mit 4, um den Bruch loszuwerden (positive Zahl – das Zeichen bleibt!).'],
+ ans:'Jonas muss im vierten Test mindestens {} Punkte erreichen.',sol:[14],
+ w:{v:'x = Punkte im vierten Test, x ∈ ℕ und höchstens 20',a:'Durchschnitt = Summe aller Punkte : 4. „Mindestens 12“ bedeutet „≥ 12“: <span class="eq">(14 + 11 + 9 + x) : 4 ≥ 12</span>',
+  c:[['(34 + x) : 4 ≥ 12','| · 4'],['34 + x ≥ 48','| − 34'],['x ≥ 14','']],p:'Mit 14 Punkten: (34 + 14) : 4 = 48 : 4 = 12 ✓. Mit 13 Punkten wäre der Durchschnitt 11,75.',L:'L = {14; 15; 16; 17; 18; 19; 20}, da höchstens 20 Punkte möglich sind',s:'Jonas muss im vierten Test mindestens 14 Punkte erreichen.'}},
+{t:'Spardose',lv:2,
+ txt:'In Pauls Spardose liegen nur 1-€-Münzen und 2-€-Münzen, insgesamt 30 Stück. Zusammen sind sie 46 € wert. Wie viele Münzen jeder Sorte sind in der Spardose?',
+ tips:['Sei <b>x</b> die Anzahl der 2-€-Münzen. Wie viele 1-€-Münzen gibt es dann, wenn es insgesamt 30 Münzen sind?','Rechne den <b>Wert</b> der beiden Münzsorten aus: Anzahl mal Wert pro Münze.','Der Wert der 2-€-Münzen plus der Wert der 1-€-Münzen ergibt 46 €.'],
+ ans:'In der Spardose liegen {} Münzen zu 2 € und {} Münzen zu 1 €.',sol:[16,14],
+ w:{v:'x = Anzahl der 2-€-Münzen. Dann gibt es 30 − x Münzen zu 1 €.',a:'Wert der 2-€-Münzen + Wert der 1-€-Münzen = 46 €: <span class="eq">2x + 1 · (30 − x) = 46</span>',
+  c:[['2x + 30 − x = 46','zusammenfassen'],['x + 30 = 46','| − 30'],['x = 16','']],p:'16 · 2 € + 14 · 1 € = 32 € + 14 € = 46 € und 16 + 14 = 30 Münzen ✓',L:'L = {16}',s:'In der Spardose liegen 16 Münzen zu 2 € und 14 Münzen zu 1 €.'}},
+{t:'Gartenbeet',lv:2,
+ txt:'Ein rechteckiges Gartenbeet soll 3 m breit werden. Für die Umrandung stehen höchstens 34 m Holzleisten zur Verfügung. Wie lang darf das Beet höchstens werden, wenn nur ganze Meter möglich sind?',
+ tips:['Sei <b>x</b> die Länge des Beets. Die Umrandung ist der Umfang des Rechtecks.','Umfang = 2 · Länge + 2 · Breite. „Höchstens 34 m“ – welches Zeichen passt?','Löse die Ungleichung. Die größte ganze Zahl, die passt, ist die Antwort.'],
+ ans:'Das Beet darf höchstens {} m lang werden.',sol:[14],
+ w:{v:'x = Länge des Beets in m, x ∈ '+NU,a:'Umfang = 2 · Länge + 2 · Breite. „Höchstens 34 m“ bedeutet „≤ 34“: <span class="eq">2x + 2 · 3 ≤ 34</span>',
+  c:[['2x + 6 ≤ 34','| − 6'],['2x ≤ 28','| : 2'],['x ≤ 14','']],p:'Bei 14 m Länge: 2 · 14 + 2 · 3 = 34 m ✓. Bei 15 m: 36 m, das reicht nicht.',L:'L = {1; 2; 3; …; 14}',s:'Das Beet darf höchstens 14 m lang werden.'}},
+{t:'Radfahrer',lv:2,
+ txt:'Zwei Orte liegen 99 km voneinander entfernt. Um 9 Uhr fahren zwei Radfahrer gleichzeitig los, jeweils von einem Ort in Richtung des anderen. Der eine fährt 15 km pro Stunde, der andere 18 km pro Stunde. Um wie viel Uhr treffen sie sich?',
+ tips:['Sei <b>x</b> die Fahrzeit bis zum Treffen in Stunden. Wie weit ist jeder Radfahrer bis dahin gefahren? (Strecke = Geschwindigkeit · Zeit)','Wenn sie sich treffen, haben beide zusammen genau die ganze Strecke von 99 km zurückgelegt.','Du bekommst zuerst die Fahrzeit. Die Uhrzeit erhältst du, indem du die Fahrzeit zu 9 Uhr addierst.'],
+ ans:'Die Radfahrer treffen sich nach {} Stunden, also um {} Uhr.',sol:[3,12],
+ w:{v:'x = Fahrzeit bis zum Treffen in Stunden',a:'Strecke = Geschwindigkeit · Zeit. Beide Strecken zusammen ergeben 99 km: <span class="eq">15x + 18x = 99</span>',
+  c:[['15x + 18x = 99','zusammenfassen'],['33x = 99','| : 33'],['x = 3','']],p:'15 · 3 + 18 · 3 = 45 + 54 = 99 ✓',L:'L = {3}',s:'Die Radfahrer treffen sich nach 3 Stunden, also um 12 Uhr.'}},
+{t:'Streamingdienst',lv:2,
+ txt:'Ein Streamingdienst bietet zwei Modelle an: Ohne Abo kostet jeder Film 4 €. Mit Abo zahlt man 9 € im Monat und dann nur noch 1 € pro Film. Ab wie vielen Filmen im Monat lohnt sich das Abo?',
+ tips:['Sei <b>x</b> die Anzahl der Filme im Monat. Stelle für beide Modelle einen Kostenterm auf.','Das Abo „lohnt sich“, wenn es <b>billiger</b> ist als das Modell ohne Abo.','Beim Teilen durch eine negative Zahl muss das Ungleichheitszeichen umgedreht werden. Du kannst auch so umformen, dass x positiv bleibt.'],
+ ans:'Das Abo lohnt sich ab {} Filmen im Monat.',sol:[4],
+ w:{v:'x = Anzahl der Filme im Monat, x ∈ '+NU,a:'Ohne Abo: 4x. Mit Abo: 9 + 1 · x. Das Abo lohnt sich, wenn es billiger ist: <span class="eq">9 + x &lt; 4x</span>',
+  c:[['9 + x < 4x','| − 4x'],['9 − 3x < 0','| − 9'],['−3x < −9','| : (−3), Zeichen umdrehen!'],['x > 3','']],p:'Bei 3 Filmen kosten beide Modelle 12 €. Bei 4 Filmen: mit Abo 13 €, ohne Abo 16 € ✓',L:'L = {4; 5; 6; …}',s:'Das Abo lohnt sich ab 4 Filmen im Monat.'}},
+{t:'Geld aufteilen',lv:2,
+ txt:'Drei Geschwister teilen sich 960 €. Anna bekommt doppelt so viel wie Tim. Mia bekommt 120 € mehr als Tim. Wie viel Geld bekommt jedes Kind?',
+ tips:['Wähle als Variable <b>x</b> den Betrag, mit dem die anderen verglichen werden – also Tims Betrag.','Anna bekommt „doppelt so viel“ wie Tim, Mia „120 € mehr“. Schreibe beide Beträge mit x auf.','Alle drei Beträge zusammen ergeben 960 €. Berechne am Ende alle drei Beträge, nicht nur x.'],
+ ans:'Tim bekommt {} €, Anna {} € und Mia {} €.',sol:[210,420,330],
+ w:{v:'x = Betrag von Tim in €. Anna bekommt 2x, Mia bekommt x + 120.',a:'Zusammen bekommen sie 960 €: <span class="eq">x + 2x + (x + 120) = 960</span>',
+  c:[['x + 2x + x + 120 = 960','zusammenfassen'],['4x + 120 = 960','| − 120'],['4x = 840','| : 4'],['x = 210','']],p:'210 + 420 + 330 = 960 ✓',L:'L = {210}',s:'Tim bekommt 210 €, Anna 420 € und Mia 330 €.'}},
+/* ---- schwer ---- */
+{t:'Klassenverhältnis',lv:3,
+ txt:'In der Klasse 8c sind 2 Mädchen mehr als Jungen. Das Verhältnis von Jungen zu Mädchen beträgt 3 : 4. Wie viele Jungen und wie viele Mädchen sind in der Klasse?',
+ tips:['Sei <b>x</b> die Anzahl der Jungen. Wie viele Mädchen sind es dann?','Ein Verhältnis 3 : 4 kann man als Bruch schreiben: Jungen durch Mädchen = ¾.','Du hast jetzt zwei Brüche, die gleich sind. Multipliziere über Kreuz und löse die Klammer auf.'],
+ ans:'In der Klasse sind {} Jungen und {} Mädchen.',sol:[6,8],
+ w:{v:'x = Anzahl der Jungen. Die Anzahl der Mädchen ist x + 2.',a:'Jungen : Mädchen = 3 : 4, als Brüche geschrieben: <span class="eq">'+fr('x','x + 2')+' = '+fr(3,4)+'</span>',d:'Der Nenner x + 2 darf nicht 0 sein: D = ℕ \\ {−2}',
+  c:[['x/(x + 2) = 3/4','über Kreuz multiplizieren'],['4x = 3(x + 2)','Klammer auflösen'],['4x = 3x + 6','| − 3x'],['x = 6','']],p:'6 Jungen und 8 Mädchen: 6/8 = 3/4 ✓, und 8 = 6 + 2 ✓',L:'L = {6}',s:'In der Klasse 8c sind 6 Jungen und 8 Mädchen.'}},
+{t:'Kerzen',lv:3,
+ txt:'Zwei Kerzen werden gleichzeitig angezündet. Kerze A ist 30 cm lang und brennt pro Stunde um 2 cm herunter. Kerze B ist 20 cm lang und brennt pro Stunde um 1 cm herunter. Nach wie vielen vollen Stunden ist Kerze A zum ersten Mal kürzer als Kerze B?',
+ tips:['Sei <b>x</b> die Brenndauer in Stunden. Wie lang ist jede Kerze noch nach x Stunden? (Startlänge minus abgebrannte Länge)','Kerze A soll <b>kürzer</b> sein als Kerze B. Welches Zeichen steht zwischen den Termen?','Wenn du am Ende −x &lt; −10 erhältst, musst du mit (−1) multiplizieren – und das Zeichen umdrehen. Gesucht ist die <b>kleinste ganze Zahl</b>, die passt.'],
+ ans:'Nach {} Stunden ist Kerze A zum ersten Mal kürzer als Kerze B.',sol:[11],
+ w:{v:'x = Brenndauer in vollen Stunden, x ∈ ℕ',a:'Nach x Stunden ist Kerze A noch 30 − 2x cm lang, Kerze B noch 20 − x cm. A soll kürzer sein als B: <span class="eq">30 − 2x &lt; 20 − x</span>',
+  c:[['30 − 2x < 20 − x','| + x'],['30 − x < 20','| − 30'],['−x < −10','| · (−1), Zeichen umdrehen!'],['x > 10','']],p:'Nach 10 Stunden sind beide Kerzen 10 cm lang. Nach 11 Stunden ist A 8 cm und B 9 cm lang ✓',L:'L = {11; 12; 13; 14; 15}. Kerze A ist nach 15 Stunden abgebrannt, danach ergibt die Frage keinen Sinn mehr.',s:'Nach 11 Stunden ist Kerze A zum ersten Mal kürzer als Kerze B.'}},
+{t:'Konzertkarten',lv:3,
+ txt:'Für ein Schulkonzert wurden 350 Karten verkauft. Eine Karte für Erwachsene kostet 18 €, eine Schülerkarte 11 €. Insgesamt wurden 5 040 € eingenommen. Wie viele Erwachsenenkarten und wie viele Schülerkarten wurden verkauft?',
+ tips:['Sei <b>x</b> die Anzahl der Erwachsenenkarten. Wie viele Schülerkarten gibt es dann, wenn es insgesamt 350 Karten sind?','Berechne die Einnahmen getrennt: Anzahl · Preis für jede Kartenart.','Die Einnahmen beider Kartenarten ergeben zusammen 5 040 €. Achte beim Auflösen der Klammer auf 11 · (350 − x).'],
+ ans:'Es wurden {} Erwachsenenkarten und {} Schülerkarten verkauft.',sol:[170,180],
+ w:{v:'x = Anzahl der Erwachsenenkarten. Dann wurden 350 − x Schülerkarten verkauft.',a:'Einnahmen Erwachsene + Einnahmen Schüler = 5 040 €: <span class="eq">18x + 11(350 − x) = 5040</span>',
+  c:[['18x + 11(350 − x) = 5040','Klammer auflösen'],['18x + 3850 − 11x = 5040','zusammenfassen'],['7x + 3850 = 5040','| − 3850'],['7x = 1190','| : 7'],['x = 170','']],p:'170 · 18 € + 180 · 11 € = 3 060 € + 1 980 € = 5 040 € und 170 + 180 = 350 ✓',L:'L = {170}',s:'Es wurden 170 Erwachsenenkarten und 180 Schülerkarten verkauft.'}},
+{t:'Handwerker',lv:3,
+ txt:'Familie Yilmaz braucht einen Handwerker. Firma A berechnet 60 € Anfahrt und 40 € pro Arbeitsstunde. Firma B berechnet 25 € Anfahrt und 45 € pro Arbeitsstunde. Abgerechnet wird nur in vollen Stunden. Ab wie vielen Arbeitsstunden ist Firma A günstiger?',
+ tips:['Sei <b>x</b> die Anzahl der Arbeitsstunden. Stelle für beide Firmen die Gesamtkosten als Term auf (Anfahrt + Stunden · Preis).','Firma A soll <b>günstiger</b> sein als Firma B – welches Zeichen steht zwischen den Termen?','Bringe die x-Terme auf eine Seite. Wenn du durch eine negative Zahl teilst, drehst du das Zeichen um.'],
+ ans:'Ab {} Arbeitsstunden ist Firma A günstiger.',sol:[8],
+ w:{v:'x = Anzahl der Arbeitsstunden, x ∈ '+NU,a:'Kosten Firma A: 60 + 40x. Kosten Firma B: 25 + 45x. A soll günstiger sein: <span class="eq">60 + 40x &lt; 25 + 45x</span>',
+  c:[['60 + 40x < 25 + 45x','| − 45x'],['60 − 5x < 25','| − 60'],['−5x < −35','| : (−5), Zeichen umdrehen!'],['x > 7','']],p:'Bei 7 Stunden kosten beide Firmen 340 €. Bei 8 Stunden: A 380 €, B 385 € ✓',L:'L = {8; 9; 10; …}',s:'Ab 8 Arbeitsstunden ist Firma A günstiger.'}},
+{t:'Gesuchter Bruch',lv:3,
+ txt:'Bei einem Bruch ist der Nenner um 5 größer als der Zähler. Addiert man zum Zähler und zum Nenner jeweils 3, erhält man einen Bruch mit dem Wert 2/3. Wie heißt der ursprüngliche Bruch?',
+ tips:['Sei <b>x</b> der Zähler. Wie lautet dann der Nenner?','Nach dem Addieren von 3 zu Zähler und Nenner entsteht ein neuer Bruch. Schreibe ihn mit x auf und setze ihn gleich 2/3.','Multipliziere über Kreuz und löse die Klammern auf. Zum Schluss brauchst du Zähler <b>und</b> Nenner des ursprünglichen Bruchs.'],
+ ans:'Der ursprüngliche Bruch heißt {} / {}.',sol:[7,12],
+ w:{v:'x = Zähler des ursprünglichen Bruchs. Der Nenner ist x + 5.',a:'Zu Zähler und Nenner wird 3 addiert: <span class="eq">'+fr('x + 3','x + 8')+' = '+fr(2,3)+'</span>',d:'Der Nenner x + 8 darf nicht 0 sein: D = ℕ \\ {−8}',
+  c:[['(x + 3)/(x + 8) = 2/3','über Kreuz multiplizieren'],['3(x + 3) = 2(x + 8)','Klammern auflösen'],['3x + 9 = 2x + 16','| − 2x'],['x + 9 = 16','| − 9'],['x = 7','']],p:'Ursprünglicher Bruch 7/12. Neuer Bruch 10/15 = 2/3 ✓',L:'L = {7}',s:'Der ursprüngliche Bruch heißt 7/12.'}}
+];
+const N=TASKS.length, LVN=['','leicht','mittel','schwer'];
+const KEY='mathe8_sachaufgaben_v1';
+
+/* ============ Zustand ============ */
+let prog={};            // i -> {coins, ok}
+try{ const s=JSON.parse(localStorage.getItem(KEY)||'{}'); if(s&&typeof s==='object') prog=s; }catch(e){}
+const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(prog)); }catch(e){} };
+
+let view=firstOpen();   // angezeigte Aufgabe (0..N-1) oder N = Abschluss
+let st=null;            // Zustand der aktuellen offenen Aufgabe
+
+function firstOpen(){ for(let i=0;i<N;i++) if(!prog[i]) return i; return N; }
+function totalCoins(){ let c=0; for(const k in prog) c+=prog[k].coins||0; return c; }
+function resetSt(){ st={tips:0,attempts:0,checking:false,msg:'',marks:[],vals:[]}; }
+resetSt();
+
+const $=id=>document.getElementById(id);
+const app=$('app');
+
+function coinsFor(){
+  const base=st.attempts===1?3:2;                 // 1. Versuch: 3, 2. Versuch: 2
+  const cap=st.tips===0?3:(st.tips===1?2:1);       // kein Tipp: 3, ein Tipp: 2, mehr Tipps: 1
+  return Math.min(base,cap);
+}
+
+/* ============ Rendering ============ */
+function wayHTML(w){
+  let h='<div class="st"><b>1. Variable festlegen:</b> '+w.v+'</div>';
+  h+='<div class="st"><b>2. Ansatz:</b> '+w.a+'</div>';
+  let n=3;
+  if(w.d){ h+='<div class="st"><b>'+n+'. Definitionsmenge:</b> '+w.d+'</div>'; n++; }
+  h+='<div class="st"><b>'+n+'. Lösen:</b><div class="calc">'+w.c.map(r=>'<div class="row"><span>'+r[0]+'</span><span class="o">'+r[1]+'</span></div>').join('')+'</div></div>'; n++;
+  h+='<div class="st"><b>'+n+'. Probe:</b> '+w.p+'</div>'; n++;
+  h+='<div class="st"><b>'+n+'. Lösungsmenge:</b> '+w.L+'</div>'; n++;
+  h+='<div class="st"><b>'+n+'. Antwortsatz:</b> '+w.s+'</div>';
+  return h;
+}
+
+function mapHTML(){
+  const cur=firstOpen();
+  let h='<div class="map">';
+  for(let i=0;i<N;i++){
+    const p=prog[i];
+    let cls=p?(p.ok?'ok':'no'):(i===cur?'cur':'');
+    if(i===view) cls+=' sel';
+    const dis=(!p&&i!==cur)?' disabled':'';
+    h+='<button class="'+cls+'" data-go="'+i+'"'+dis+' aria-label="Aufgabe '+(i+1)+'">'+(i+1)+'</button>';
+  }
+  return h+'</div>';
+}
+
+function render(){
+  let h='<a class="back" href="index.html">&larr; Zur Übersicht</a>';
+  h+='<h1>Sachaufgaben</h1>';
+  h+='<div class="top"><p class="sub" style="margin:0">Stelle zu jeder Sachaufgabe eine Gleichung oder Ungleichung auf und löse sie. Erst wenn du eine Aufgabe abgeschlossen hast, wird die nächste frei.</p>';
+  h+='<div class="coins" title="Gesammelte Münzen">🪙 '+totalCoins()+' / '+(N*3)+'</div></div>';
+  h+=mapHTML();
+
+  if(view>=N){ h+=finalHTML(); app.innerHTML=h; bind(); return; }
+
+  const T=TASKS[view], done=prog[view];
+  h+='<div class="lvl"><span class="tag t'+T.lv+'">'+LVN[T.lv]+'</span>Aufgabe '+(view+1)+' von '+N+'</div>';
+  h+='<h2 class="ttl">'+T.t+'</h2><p class="story">'+T.txt+'</p>';
+
+  if(done){
+    h+=doneHTML(T,done);
+  }else{
+    h+=tipsHTML(T);
+    if(!st.checking){
+      h+='<div class="btnrow"><button class="btn" id="open">Lösung prüfen</button></div>';
+    }else{
+      h+=checkHTML(T);
+    }
+  }
+  app.innerHTML=h; bind();
+}
+
+function tipsHTML(T){
+  let h='<div class="tips"><div class="tiphd">Brauchst du Hilfe? Jeder geöffnete Tipp kostet Münzen (1 Tipp: höchstens 2 🪙, 2 oder mehr Tipps: höchstens 1 🪙).</div><div class="tipbtns">';
+  for(let i=0;i<T.tips.length;i++){
+    if(i>=st.tips) h+='<button class="tip" data-tip="'+i+'" '+(i>st.tips?'disabled style="opacity:.4;cursor:not-allowed"':'')+'>💡 Tipp '+(i+1)+'</button>';
+  }
+  h+='</div>';
+  for(let i=0;i<st.tips;i++) h+='<div class="tipbox"><b>Tipp '+(i+1)+':</b> '+T.tips[i]+'</div>';
+  return h+'</div>';
+}
+
+function checkHTML(T){
+  const parts=T.ans.split('{}');
+  let h='<div class="box chk"><div class="hd">Lösung prüfen – '+(st.attempts===0?'1. Versuch':'2. Versuch')+'</div><div class="ans">';
+  for(let i=0;i<parts.length;i++){
+    h+=parts[i];
+    if(i<parts.length-1){
+      const m=st.marks[i]; const c=m===true?'r':(m===false?'w':'');
+      h+='<input type="text" inputmode="decimal" autocomplete="off" id="in'+i+'" class="'+c+'" value="'+(st.vals[i]||'')+'" aria-label="Lücke '+(i+1)+'">';
+    }
+  }
+  h+='</div>';
+  if(st.msg) h+='<p class="msg">'+st.msg+'</p>';
+  h+='<div class="btnrow"><button class="btn" id="chk">Prüfen</button></div></div>';
+  return h;
+}
+
+function doneHTML(T,done){
+  let h='';
+  if(done.ok) h+='<div class="box good"><div class="hd">✓ Richtig! +'+done.coins+' 🪙</div><div class="ans" style="line-height:1.5">'+T.w.s+'</div></div>';
+  else h+='<div class="box bad"><div class="hd">Diesmal leider nicht – 0 🪙</div><p class="msg">Schau dir den Lösungsweg in Ruhe an. Bei der nächsten Aufgabe klappt es bestimmt besser!</p></div>';
+  h+='<div class="box way"><div class="hd">Lösungsweg</div>'+wayHTML(T.w)+'</div>';
+  h+='<div class="btnrow"><button class="btn" id="next">'+(firstOpen()>=N?'Zum Ergebnis':'Weiter zur nächsten Aufgabe')+'</button></div>';
+  return h;
+}
+
+function finalHTML(){
+  const c=totalCoins(), max=N*3;
+  let msg=c>=max*0.8?'Spitze – du bist ein Gleichungs-Profi!':(c>=max*0.5?'Starke Leistung! Schau dir die rot markierten Aufgaben nochmal an.':'Gut durchgehalten! Übe die rot markierten Aufgaben noch einmal.');
+  return '<div class="final"><div class="big">🪙 '+c+' von '+max+' Münzen</div><p class="sub" style="margin:10px auto">'+msg+'</p>'+
+    '<div class="btnrow" style="justify-content:center"><button class="btn ghost" id="reset">Nochmal von vorn beginnen</button></div></div>';
+}
+
+/* ============ Ereignisse ============ */
+function bind(){
+  app.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{
+    const i=+b.dataset.go; if(i!==view){ view=i; if(!prog[i]) resetSt(); render(); }
+  }));
+  app.querySelectorAll('[data-tip]').forEach(b=>b.addEventListener('click',()=>{
+    syncVals(); st.tips=Math.max(st.tips,+b.dataset.tip+1); render();
+  }));
+  const o=$('open'); if(o) o.addEventListener('click',()=>{ st.checking=true; render(); const f=$('in0'); if(f) f.focus(); });
+  const c=$('chk'); if(c) c.addEventListener('click',check);
+  app.querySelectorAll('.ans input').forEach(inp=>inp.addEventListener('keydown',e=>{ if(e.key==='Enter') check(); }));
+  const n=$('next'); if(n) n.addEventListener('click',()=>{ view=firstOpen(); resetSt(); render(); window.scrollTo({top:0,behavior:'smooth'}); });
+  const r=$('reset'); if(r) r.addEventListener('click',()=>{ if(confirm('Wirklich alles zurücksetzen? Deine Münzen gehen verloren.')){ prog={}; save(); view=0; resetSt(); render(); } });
+}
+
+function syncVals(){
+  const T=TASKS[view]; if(!T||!st.checking) return;
+  st.vals=T.sol.map((_,i)=>{ const e=$('in'+i); return e?e.value:''; });
+}
+const num=s=>{ s=String(s).replace(/€|\s/g,'').replace(',','.'); return s===''||isNaN(s)?NaN:Number(s); };
+
+function check(){
+  const T=TASKS[view];
+  syncVals();
+  if(st.vals.some(v=>String(v).trim()==='')){ st.msg='Bitte fülle alle Lücken aus.'; render(); return; }
+  st.attempts++;
+  st.marks=T.sol.map((s,i)=>num(st.vals[i])===s);
+  const allOk=st.marks.every(Boolean);
+  if(allOk){
+    prog[view]={ok:true,coins:coinsFor()}; save(); resetSt(); render(); return;
+  }
+  if(st.attempts>=2){
+    prog[view]={ok:false,coins:0}; save(); resetSt(); render(); return;
+  }
+  st.msg='<b>Noch nicht ganz.</b> Die rot markierten Lücken stimmen noch nicht. Rechne nochmal nach – du hast einen weiteren Versuch! Tipps können dir dabei helfen.';
+  render();
+  const first=st.marks.findIndex(m=>!m); const f=$('in'+first); if(f) f.focus();
+}
+
+render();
+})();
+</script>
+</body>
+</html>
