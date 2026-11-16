@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bruchgleichungs-Domino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-1:#24402F; --bg-2:#1B3323; --chalk:#F3EFE3; --chalk-dim:#C9D6C4;
+    --yellow:#E8C25B; --coral:#E2836B; --green:#93C08C; --blue:#89B7CB;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{min-height:100%;}
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,0.035) 0, transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(255,255,255,0.03) 0, transparent 40%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    font-family:'Space Grotesk', sans-serif; color:var(--chalk); padding:24px 16px 40px;
+  }
+  .board{ width:100%; max-width:920px; margin:0 auto; }
+  .frame{
+    background:repeating-linear-gradient(45deg,#8a5a34,#8a5a34 6px,#7a4c2b 6px,#7a4c2b 12px);
+    border-radius:22px; padding:10px; box-shadow:var(--shadow);
+  }
+  .panel{
+    background:radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.05), transparent 60%), var(--bg-1);
+    border-radius:16px; padding:28px 26px 26px; position:relative; min-height:560px;
+  }
+  .panel::before{
+    content:""; position:absolute; inset:0; border-radius:16px;
+    background-image:radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size:14px 14px; opacity:.35; pointer-events:none;
+  }
+  .panel > *{ position:relative; z-index:1; }
+
+  h1{ font-family:'Kalam',cursive; font-weight:700; font-size:clamp(1.7rem,5vw,2.5rem); margin:0 0 6px; transform:rotate(-0.6deg); }
+  .sub{ color:var(--chalk-dim); font-size:.95rem; margin:0 0 16px; max-width:66ch; line-height:1.5; }
+  .back{ color:var(--chalk-dim); font-size:.85rem; text-decoration:none; display:inline-block; margin-bottom:12px; }
+  .back:hover{ color:var(--yellow); }
+
+  .top{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .stat{ font-weight:700; font-size:1rem; background:rgba(0,0,0,.2); border:1.5px solid var(--yellow); color:var(--yellow); border-radius:999px; padding:6px 16px; font-variant-numeric:tabular-nums; }
+  .btn{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.95rem; background:var(--yellow); color:#2B2110;
+    border:none; border-radius:10px; padding:10px 20px; cursor:pointer; box-shadow:0 4px 0 #b58f37;
+    transition:transform .08s, box-shadow .08s;
+  }
+  .btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #b58f37; }
+  .btn.ghost{ background:transparent; color:var(--chalk); border:1.5px solid rgba(243,239,227,.4); box-shadow:none; }
+  .btn:focus-visible{ outline:2px solid var(--blue); outline-offset:3px; }
+
+  /* Bruch */
+  .frac{ display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 .12em; line-height:1.15; font-size:.88em; }
+  .frac .n{ border-bottom:.07em solid currentColor; padding:0 .25em .06em; }
+  .frac .d{ padding:.06em .25em 0; }
+
+  /* Domino-Karte */
+  :root{ --cw:270px; --ch:70px; }
+  .dom{
+    width:var(--cw); height:var(--ch); display:flex; border-radius:12px;
+    background:#F3EFE3; color:#1d2b22; box-shadow:0 5px 0 #b9b39f, 0 8px 14px rgba(0,0,0,.35);
+    font-size:1.02rem; font-weight:600; user-select:none; -webkit-user-select:none;
+    overflow:hidden; position:relative;
+  }
+  .dom .h{ flex:1; display:flex; align-items:center; justify-content:center; text-align:center; padding:4px 6px; white-space:nowrap; min-width:0; }
+  .dom .h.l{ background:#E6F0DE; }
+  .dom .h.r{ background:#FBF3D8; }
+  .dom .mid{ width:3px; background:#8a7a56; align-self:stretch; opacity:.65; }
+  .dom .lab{ position:absolute; top:3px; font-size:.6rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#6b6a58; }
+  .dom .lab.a{ left:8px; } .dom .lab.b{ right:8px; }
+  .dom.fixed{ box-shadow:0 5px 0 #7d9b73, 0 8px 14px rgba(0,0,0,.35); }
+
+  /* Pfad */
+  .path{ display:flex; flex-wrap:wrap; justify-content:center; gap:30px 0; margin:10px 0 30px; }
+  .slot{
+    width:var(--cw); height:var(--ch); border:2.5px dashed rgba(243,239,227,.45); border-radius:14px;
+    position:relative; display:flex; align-items:center; justify-content:center;
+    color:rgba(243,239,227,.5); font-family:'Kalam',cursive; font-size:1rem;
+    transition:border-color .15s, background .15s;
+  }
+  .slot.hot{ border-color:var(--yellow); background:rgba(232,194,91,.12); }
+  .slot.has{ border-style:solid; border-color:transparent; background:none; }
+  .slot .no{
+    position:absolute; left:calc(50% - 13px); top:-15px; width:26px; height:26px; border-radius:50%; background:var(--bg-2);
+    border:1.5px solid rgba(243,239,227,.5); color:var(--chalk-dim); font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.8rem;
+    display:flex; align-items:center; justify-content:center; z-index:3;
+  }
+  .slot.has .no{ background:var(--green); border-color:var(--green); color:#173019; }
+  .slot.nxt{ border-color:var(--yellow); }
+  .slot.nxt::after{ content:"hier weiter"; position:absolute; bottom:-19px; left:12px; font-size:.78rem; color:var(--yellow); font-family:'Space Grotesk',sans-serif; }
+  .slot.bounce .dom{ animation:pop .45s ease; }
+  @keyframes pop{ 0%{transform:rotate(-9deg) scale(1.08);} 60%{transform:rotate(1.5deg) scale(1.02);} 100%{transform:none;} }
+
+  /* Kartenstapel */
+  .poolhd{ font-size:.9rem; color:var(--chalk-dim); margin:0 0 10px; }
+  .pool{ display:flex; flex-wrap:wrap; gap:26px 24px; justify-content:center; padding:16px 6px 10px; border-top:1.5px dashed rgba(243,239,227,.2); }
+  .pc{ cursor:grab; touch-action:none; transition:transform .2s, box-shadow .2s; }
+  .pc:hover{ transform:translateY(-3px) rotate(var(--rot)); }
+  .pc.sel .dom{ outline:3px solid var(--yellow); outline-offset:2px; }
+  .pc.drag{ position:fixed; z-index:50; pointer-events:none; transition:none; cursor:grabbing; filter:drop-shadow(0 12px 14px rgba(0,0,0,.45)); }
+  .pc.back{ transition:transform .3s ease; }
+  .shake{ animation:shake .4s; }
+  @keyframes shake{ 0%,100%{margin-left:0;} 20%{margin-left:-8px;} 40%{margin-left:8px;} 60%{margin-left:-6px;} 80%{margin-left:5px;} }
+
+  .msg{ min-height:1.6em; margin:8px 0 14px; font-size:1rem; text-align:center; color:var(--chalk-dim); }
+  .msg.bad{ color:var(--coral); } .msg.good{ color:var(--green); }
+
+  .win{ display:none; background:rgba(0,0,0,.22); border:2px solid var(--green); border-radius:14px; padding:18px 20px; margin-top:12px; }
+  .win.show{ display:block; }
+  .win h2{ font-family:'Kalam',cursive; margin:0 0 8px; font-size:1.7rem; color:var(--green); }
+  .win ol{ margin:10px 0 0; padding-left:22px; line-height:1.9; }
+  .win li{ margin-bottom:6px; }
+  .win .weg{ color:var(--chalk-dim); font-size:.9rem; display:block; line-height:1.5; }
+
+  @media (max-width:520px){
+    :root{ --cw:min(270px, calc(100vw - 90px)); --ch:70px; }
+    .panel{ padding:20px 14px 20px; }
+    .dom{ font-size:.86rem; }
+  }
+</style>
+</head>
+<body>
+<div class="board"><div class="frame"><div class="panel">
+  <a class="back" href="index.html">&larr; Zur Übersicht</a>
+  <h1>Bruchgleichungs-Domino</h1>
+  <p class="sub">Links auf jeder Karte steht die <b>Lösungsmenge</b> der Aufgabe davor, rechts die <b>nächste Aufgabe</b> (Verhältnisgleichungen mit Brüchen). Löse die Aufgabe am Ende der Kette, finde die Karte mit der passenden Lösungsmenge und lege sie auf den gestrichelten Pfad (ziehen oder antippen). Achte auf die Definitionsmenge!</p>
+
+  <div class="top">
+    <span class="stat" id="stat">Gelegt: 0 / 0</span>
+    <span class="stat" id="err" style="border-color:var(--coral);color:var(--coral)">Fehlversuche: 0</span>
+    <button class="btn ghost" id="again">Neu mischen</button>
+  </div>
+
+  <div class="path" id="path"></div>
+  <div class="msg" id="msg">Beginne bei der Aufgabe auf der Startkarte.</div>
+
+  <p class="poolhd">Kartenstapel:</p>
+  <div class="pool" id="pool"></div>
+
+  <div class="win" id="win"></div>
+</div></div></div>
+
+<script>
+const F=(n,d)=>`<span class="frac"><span class="n">${n}</span><span class="d">${d}</span></span>`;
+// Mini-Markup: [[zähler|nenner]] ist ein Bruch, - wird zu Minus
+const R=s=>s.replace(/-/g,'&minus;').replace(/\[\[([^|\]]*)\|([^\]]*)\]\]/g,(m,a,b)=>F(a,b));
+
+// Aufgaben (der Reihe nach) mit Lösungsmenge und Rechenweg
+const P=[
+  {q:'[[4|x]] = [[8|3]]',               s:'L = { [[3|2]] }',  w:'Verhältnisgleichung, D = ℚ∖{0}. Über Kreuz: 4·3 = 8·x, also x = 3/2.'},
+  {q:'[[6|x]] = [[3|4]]',               s:'L = { 8 }',        w:'D = ℚ∖{0}. Über Kreuz: 6·4 = 3·x, also x = 8.'},
+  {q:'[[x|2]] = [[9|6]]',               s:'L = { 3 }',        w:'Über Kreuz: 6x = 18, also x = 3.'},
+  {q:'[[2|x+1]] = [[6|9]]',             s:'L = { 2 }',        w:'D = ℚ∖{−1}. Über Kreuz: 18 = 6(x+1), also x = 2.'},
+  {q:'[[3|x-2]] = [[6|x+1]]',           s:'L = { 5 }',        w:'D = ℚ∖{−1; 2}. Über Kreuz: 3(x+1) = 6(x−2), also x = 5.'},
+  {q:'[[4|x-1]] = [[6|x+2]]',           s:'L = { 7 }',        w:'D = ℚ∖{−2; 1}. Über Kreuz: 4(x+2) = 6(x−1), also x = 7.'},
+  {q:'[[x+1|x-1]] = [[5|3]]',           s:'L = { 4 }',        w:'D = ℚ∖{1}. Über Kreuz: 3(x+1) = 5(x−1), also x = 4.'},
+  {q:'[[x|x+2]] = [[1|3]]',             s:'L = { 1 }',        w:'D = ℚ∖{−2}. Über Kreuz: 3x = x + 2, also x = 1.'},
+  {q:'[[x-1|x+2]] = [[3|4]]',           s:'L = { 10 }',       w:'D = ℚ∖{−2}. Über Kreuz: 4(x−1) = 3(x+2), also x = 10.'},
+  {q:'[[x+1|x-2]] = [[x+3|x+2]]',       s:'L = { -4 }',       w:'D = ℚ∖{−2; 2}. Über Kreuz: (x+1)(x+2) = (x+3)(x−2) → x²+3x+2 = x²+x−6. Das x² fällt weg: 2x = −8, also x = −4.'},
+  {q:'[[x|x-1]] = [[x+2|x+3]]',         s:'L = { -1 }',       w:'D = ℚ∖{−3; 1}. Über Kreuz: x(x+3) = (x+2)(x−1) → x²+3x = x²+x−2. Das x² fällt weg: 2x = −2, also x = −1.'},
+  {q:'[[x+3|x-1]] = [[x+6|x-2]]',       s:'L = { 0 }',        w:'D = ℚ∖{1; 2}. Über Kreuz: (x+3)(x−2) = (x+6)(x−1) → x²+x−6 = x²+5x−6. Das x² fällt weg: 4x = 0, also x = 0.'},
+  {q:'[[x+2|x-3]] = [[x+4|x-1]]',       s:'L = { }',          w:'D = ℚ∖{1; 3}. Über Kreuz: (x+2)(x−1) = (x+4)(x−3) → x²+x−2 = x²+x−12. Das x² und das x fallen weg: −2 = −12 ist falsch. Keine Lösung, L = { }.'},
+  {q:'[[2x-1|x+2]] = [[2x+3|x+3]]',     s:'L = { -[[9|2]] }', w:'D = ℚ∖{−3; −2}. Über Kreuz: (2x−1)(x+3) = (2x+3)(x+2) → 2x²+5x−3 = 2x²+7x+6. Das 2x² fällt weg: −2x = 9, also x = −9/2.'},
+  {q:'[[3x+1|2x-1]] = [[3x+4|2x+3]]',   s:'L = { -[[7|6]] }', w:'D = ℚ∖{−3/2; 1/2}. Über Kreuz: (3x+1)(2x+3) = (3x+4)(2x−1) → 6x²+11x+3 = 6x²+5x−4. Das 6x² fällt weg: 6x = −7, also x = −7/6.'},
+];
+const N=P.length;
+// Karte i (0..N): links = Lösung der Aufgabe i-1 (bzw. START), rechts = Aufgabe i (bzw. ZIEL)
+const left =i=> i===0 ? 'START' : R(P[i-1].s);
+const right=i=> i===N ? 'ZIEL ✓' : R(P[i].q);
+const card=(i,fixed)=>`<div class="dom${fixed?' fixed':''}"><div class="lab a">${i===0?'':'Lösung'}</div><div class="lab b">${i===N?'':'Aufgabe'}</div><div class="h l">${left(i)}</div><div class="mid"></div><div class="h r">${right(i)}</div></div>`;
+
+const $=id=>document.getElementById(id);
+let placed, errs, selected=null;
+
+function build(){
+  placed=new Set([0]); errs=0; selected=null;
+  $('win').className='win'; $('win').innerHTML='';
+  // Slots
+  const path=$('path'); path.innerHTML='';
+  for(let i=0;i<=N;i++){
+    const s=document.createElement('div'); s.className='slot'; s.dataset.i=i;
+    if(i===0){ s.className='slot has'; s.innerHTML=card(0,true); }
+    else s.innerHTML='<span>Karte legen</span>';
+    s.insertAdjacentHTML('beforeend',`<span class="no">${i===0?'S':i}</span>`);
+    s.addEventListener('click',()=>slotClick(i));
+    path.appendChild(s);
+  }
+  // Stapel (gemischt, leicht gekippt)
+  const pool=$('pool'); pool.innerHTML='';
+  const ids=[...Array(N).keys()].map(k=>k+1);
+  for(let k=ids.length-1;k>0;k--){ const j=Math.floor(Math.random()*(k+1)); [ids[k],ids[j]]=[ids[j],ids[k]]; }
+  ids.forEach(i=>{
+    const d=document.createElement('div'); d.className='pc'; d.dataset.i=i;
+    const rot=(Math.random()*26-13); d.style.setProperty('--rot',rot+'deg'); d.style.transform=`rotate(${rot}deg)`;
+    d.innerHTML=card(i);
+    attachDrag(d);
+    pool.appendChild(d);
+  });
+  update('Beginne bei der Aufgabe auf der Startkarte.');
+}
+
+function nextSlot(){ for(let i=0;i<=N;i++) if(!placed.has(i)) return i; return -1; }
+function update(text,cls){
+  $('stat').textContent=`Gelegt: ${placed.size-1} / ${N}`;
+  $('err').textContent=`Fehlversuche: ${errs}`;
+  const m=$('msg'); if(text!==undefined){ m.textContent=text; m.className='msg '+(cls||''); }
+  document.querySelectorAll('.slot').forEach(s=>s.classList.toggle('nxt',+s.dataset.i===nextSlot()));
+}
+
+// Legeversuch
+function tryPlace(cardEl,slotIdx){
+  const i=+cardEl.dataset.i;
+  if(placed.has(slotIdx)) return false;
+  if(i!==slotIdx){
+    errs++; cardEl.classList.remove('shake'); void cardEl.offsetWidth; cardEl.classList.add('shake');
+    update(slotIdx===0?'Die Startkarte liegt schon.':'Passt nicht. Prüfe die Lösungsmenge der Aufgabe davor und die Definitionsmenge.','bad');
+    return false;
+  }
+  placed.add(slotIdx);
+  const slot=document.querySelector(`.slot[data-i="${slotIdx}"]`);
+  const no=slot.querySelector('.no');
+  slot.className='slot has bounce'; slot.innerHTML=card(slotIdx); slot.appendChild(no);
+  cardEl.remove(); selected=null;
+  document.querySelectorAll('.pc.sel').forEach(e=>e.classList.remove('sel'));
+  if(placed.size===N+1){ update('Geschafft! Die Kette ist komplett.','good'); finish(); }
+  else update('Richtig! Die Karte hat sich eingerastet.','good');
+  return true;
+}
+
+function slotClick(i){
+  if(!selected) return;
+  const el=selected; if(!el.isConnected){ selected=null; return; }
+  tryPlace(el,i);
+}
+
+function attachDrag(el){
+  let sx,sy,ox,oy,moving=false,pid=null,w,h,lx=0,ly=0,raf=0;
+  el.addEventListener('pointerdown',e=>{
+    if(e.button!==undefined && e.button>0) return;
+    pid=e.pointerId; el.setPointerCapture(pid);
+    const r=el.getBoundingClientRect(); sx=e.clientX; sy=e.clientY; ox=sx-r.left; oy=sy-r.top; w=r.width; h=r.height; moving=false;
+  });
+  el.addEventListener('pointermove',e=>{
+    if(pid===null||e.pointerId!==pid) return;
+    if(!moving){
+      if(Math.hypot(e.clientX-sx,e.clientY-sy)<7) return;
+      moving=true;
+      const ph=document.createElement('div'); ph.className='ph'; ph.style.width=w+'px'; ph.style.height=h+'px';
+      el._ph=ph; el.parentNode.insertBefore(ph,el);
+      el.classList.add('drag'); el.style.width=w+'px'; el.style.transform='rotate(0deg)';
+    }
+    lx=e.clientX; ly=e.clientY; placeDrag();
+    if(!raf) raf=requestAnimationFrame(autoScroll);
+  });
+  // Karte am Zeiger halten und Zielplatz hervorheben
+  function placeDrag(){
+    el.style.left=(lx-ox)+'px'; el.style.top=(ly-oy)+'px';
+    const s=slotAt(lx,ly);
+    document.querySelectorAll('.slot').forEach(x=>x.classList.toggle('hot',x===s&&!x.classList.contains('has')));
+  }
+  // Am Bildschirmrand automatisch scrollen (je näher am Rand, desto schneller)
+  function autoScroll(){
+    raf=0; if(!moving||pid===null) return;
+    const zone=90, vh=window.innerHeight; let v=0;
+    if(ly<zone) v=-Math.ceil((zone-Math.max(ly,0))/zone*18);
+    else if(ly>vh-zone) v=Math.ceil((Math.min(ly,vh)-(vh-zone))/zone*18);
+    if(v){ window.scrollBy(0,v); placeDrag(); }
+    raf=requestAnimationFrame(autoScroll);
+  }
+  const end=e=>{
+    if(pid===null||e.pointerId!==pid) return;
+    try{ el.releasePointerCapture(pid); }catch(_){}
+    pid=null; if(raf){ cancelAnimationFrame(raf); raf=0; }
+    if(!moving){ // Tippen = auswählen
+      const was=el.classList.contains('sel');
+      document.querySelectorAll('.pc.sel').forEach(x=>x.classList.remove('sel'));
+      if(!was){ el.classList.add('sel'); selected=el; update('Karte gewählt – tippe auf den Platz im Pfad.'); }
+      else { selected=null; update(''); }
+      return;
+    }
+    const s=slotAt(e.clientX,e.clientY);
+    document.querySelectorAll('.slot').forEach(x=>x.classList.remove('hot'));
+    const ph=el._ph;
+    const ok = s && tryPlace(el,+s.dataset.i);
+    if(ok){ ph.remove(); return; }
+    // zurück auf den Stapel
+    el.classList.remove('drag'); el.style.left=el.style.top=el.style.width='';
+    el.style.transform=`rotate(${el.style.getPropertyValue('--rot')})`;
+    ph.replaceWith(el);
+  };
+  el.addEventListener('pointerup',end);
+  el.addEventListener('pointercancel',end);
+}
+function slotAt(x,y){
+  for(const s of document.querySelectorAll('.slot')){
+    const r=s.getBoundingClientRect();
+    if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom) return s;
+  }
+  return null;
+}
+
+function finish(){
+  const w=$('win');
+  w.innerHTML=`<h2>Super, alle Karten liegen richtig!</h2><div>${errs===0?'Ohne einen einzigen Fehlversuch – stark!':'Fehlversuche: '+errs}. Hier die Lösungswege:</div><ol>`+
+    P.map(p=>`<li>${R(p.q)} &nbsp;→&nbsp; ${R(p.s)}<span class="weg">${p.w}</span></li>`).join('')+'</ol>';
+  w.className='win show';
+  w.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+$('again').addEventListener('click',build);
+build();
+</script>
+</body>
+</html>
