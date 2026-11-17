@@ -482,16 +482,16 @@
     const sl = $('#s-h1');
     sl.max = H; sl.step = d; sl.value = h;
     $('#facts1').innerHTML = 'Grundfl&auml;che <b>G = ' + fmt(G) + ' cm&sup2;</b><br>' +
-      'Eine Schicht (' + fmt(d) + '&nbsp;cm dick): ' + fmt(G) + ' cm&sup2; &middot; ' + fmt(d) + ' cm = <b>' + fmt(gd, 3) + ' cm&sup3;</b>';
+      'Schichtdicke: ' + fmt(d) + '&nbsp;cm';
     let rows = '<tr><th>F&uuml;llh&ouml;he</th><th>Schichten</th><th>Volumen V</th></tr>';
     const perCm = Math.round(1 / d);
     for (let c = 1; c <= Math.floor(h + 1e-9); c++){
-      rows += '<tr' + (Math.abs(h - c) < 1e-9 ? ' class="cur"' : '') + '><td>' + c + ' cm</td><td>' + (c * perCm) + '</td><td>' + fmt(c * G) + ' cm&sup3; = ' + fmt(G) + ' &middot; ' + c + '</td></tr>';
+      rows += '<tr' + (Math.abs(h - c) < 1e-9 ? ' class="cur"' : '') + '><td>' + c + ' cm</td><td>' + (c * perCm) + '</td><td>' + fmt(c * G) + ' cm&sup3;</td></tr>';
     }
     $('#tbl1').innerHTML = h >= 1 - 1e-9 ? rows : '';
     const full = n >= maxN();
     $('#big1').innerHTML = n
-      ? '<small>' + n + ' Schicht' + (n > 1 ? 'en' : '') + ' &times; ' + fmt(gd, 3) + ' cm&sup3; pro Schicht' + (full ? ' &mdash; Prisma ist voll' : '') + '</small>V = G &middot; h = <span class="y">' + fmt(G) + ' cm&sup2; &middot; ' + fmt(h) + ' cm = ' + fmt(h * G) + ' cm&sup3;</span>'
+      ? '<small>' + n + ' Schicht' + (n > 1 ? 'en' : '') + ' &middot; F&uuml;llh&ouml;he ' + fmt(h) + ' cm' + (full ? ' &mdash; Prisma ist voll' : '') + '</small>Volumen: <span class="y">' + fmt(h * G) + ' cm&sup3;</span>'
       : '<small>Das Prisma ist noch leer &mdash; tippe auf &bdquo;F&uuml;llen&ldquo; oder ziehe den Regler.</small>';
     $('#clear').disabled = n <= 0;
     dirty = true;
@@ -595,8 +595,8 @@
 
   function volText(){
     const G = SHAPES[m2.shape].area, gd = G * D2;
-    return '<small>' + N2 + ' Schichten &times; (' + fmt(G) + ' cm&sup2; &middot; ' + fmt(D2) + ' cm) = ' + N2 + ' &times; ' + fmt(gd, 3) + ' cm&sup3;</small>' +
-           'V = G &middot; h = <span class="y">' + fmt(G) + ' cm&sup2; &middot; ' + fmt(H2) + ' cm = ' + fmt(G * H2) + ' cm&sup3;</span>';
+    return '<small>' + N2 + ' Schichten &middot; G = ' + fmt(G) + ' cm&sup2; &middot; h = ' + fmt(H2) + ' cm</small>' +
+           'Volumen: <span class="y">' + fmt(G * H2) + ' cm&sup3;</span>';
   }
 
   function update2(){
