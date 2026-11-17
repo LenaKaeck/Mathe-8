@@ -122,6 +122,7 @@
     background: rgba(0,0,0,.2); border-radius:12px; padding:10px 14px; margin-top:10px;
     min-height:3.2em;
   }
+  .big.vol{ min-height:0; font-size:1.15rem; }
   .big small{ display:block; font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:.85rem; color:var(--chalk-dim); }
   .big .y{ color:var(--yellow); }
 
@@ -202,47 +203,34 @@
     <div class="layout2">
       <div class="panel"><div class="panel-inner">
         <div class="cv"><canvas id="cv2a"></canvas><div class="cap">gerade</div></div>
+        <div class="big vol" id="volA"></div>
       </div></div>
       <div class="panel"><div class="panel-inner">
         <div class="cv"><canvas id="cv2b"></canvas><div class="cap">schief</div></div>
+        <div class="big vol" id="volB"></div>
       </div></div>
     </div>
     <p class="hint" style="text-align:center">Mit Maus oder Finger ziehen, um beide K&ouml;rper gemeinsam zu drehen.</p>
 
-    <div class="below">
-      <div class="panel"><div class="panel-inner">
-        <div class="lbl">Grundfl&auml;che</div>
-        <div class="row" id="shapes2"></div>
+    <div class="panel" style="margin-top:18px"><div class="panel-inner">
+      <div class="lbl">Grundfl&auml;che</div>
+      <div class="row" id="shapes2"></div>
 
-        <div class="lbl">Einstellungen</div>
-        <div class="slider"><span>H&ouml;he h</span><output id="o-h"></output>
-          <input type="range" id="s-h" min="2" max="6" step="0.5" value="4"></div>
-        <div class="slider"><span>Neigung nach rechts</span><output id="o-sx"></output>
-          <input type="range" id="s-sx" min="-3" max="3" step="0.1" value="0"></div>
-        <div class="slider"><span>Neigung nach vorn</span><output id="o-sz"></output>
-          <input type="range" id="s-sz" min="-2" max="2" step="0.1" value="0"></div>
-        <div class="slider"><span>Anzahl Schichten</span><output id="o-n"></output>
-          <input type="range" id="s-n" min="2" max="300" step="1" value="120"></div>
+      <div class="lbl">Schr&auml;g stellen</div>
+      <div class="slider"><span>Neigung</span><output id="o-sx"></output>
+        <input type="range" id="s-sx" min="-3" max="3" step="0.1" value="0"></div>
+      <div class="row">
+        <button class="btn main" id="push">&#9654; Schieben</button>
+      </div>
+      <p class="note" id="note2"></p>
 
-        <div class="row" style="margin-top:4px">
-          <button class="btn main" id="push">&#9654; Schieben</button>
-          <button class="btn" id="straight">Wieder gerade</button>
-        </div>
-        <div style="margin-top:10px"><label class="chk"><input type="checkbox" id="layers2" checked> Schichten zeigen</label></div>
-      </div></div>
-
-      <div class="panel"><div class="panel-inner">
-        <h2>Vergleich</h2>
-        <table id="tbl2"></table>
-        <p class="note" id="note2"></p>
-        <div style="margin-top:12px"><button class="btn" id="whyBtn">Warum ist das so?</button></div>
-        <div class="merk" id="why">
-          Jede Schicht hat <b>dieselbe Grundfl&auml;che G</b> und <b>dieselbe Dicke</b>, egal wie weit sie verschoben ist &mdash; also hat sie dasselbe Volumen. Alle Schichten zusammen ergeben darum bei beiden K&ouml;rpern dasselbe Volumen. Das gilt auch f&uuml;r unendlich d&uuml;nne Schichten (<i>Prinzip von Cavalieri</i>).
-          <span class="f">V = G &middot; h</span>
-          <b>h</b> ist der senkrechte Abstand der Grundfl&auml;chen &mdash; nicht die schr&auml;ge Kante!
-        </div>
-      </div></div>
-    </div>
+      <div style="margin-top:12px"><button class="btn" id="whyBtn">Warum ist das so?</button></div>
+      <div class="merk" id="why">
+        Jede Schicht hat <b>dieselbe Grundfl&auml;che G</b> und <b>dieselbe Dicke</b>, egal wie weit sie verschoben ist &mdash; also hat sie dasselbe Volumen. Alle Schichten zusammen ergeben darum bei beiden K&ouml;rpern dasselbe Volumen. Das gilt auch f&uuml;r unendlich d&uuml;nne Schichten (<i>Prinzip von Cavalieri</i>).
+        <span class="f">V = G &middot; h</span>
+        <b>h</b> ist der senkrechte Abstand der Grundfl&auml;chen &mdash; nicht die schr&auml;ge Kante!
+      </div>
+    </div></div>
   </section>
 </div>
 
@@ -572,74 +560,57 @@
   shapeButtons($('#shapes1'), () => m1.shape, k => { m1.shape = k; update1(); });
 
   /* ========== Modus 2 ========== */
-  const m2 = {shape: 'rechteck', h: 4, sx: 0, sz: 0, n: 120, layers: true, anim: false, phase: 0};
+  const H2 = 4, D2 = 0.05, N2 = Math.round(H2 / D2);
+  const m2 = {shape: 'rechteck', sx: 0, anim: false, phase: 0};
   const vA = makeView($('#cv2a')), vB = makeView($('#cv2b'));
 
-  function buildLayers(sx, sz){
-    const h = m2.h, out = [];
-    if (!m2.layers){
-      out.push({y0: 0, y1: h, ob: [0, 0], ot: [sx, sz], ci: 0});
-      return out;
-    }
-    const n = m2.n, t = h / n;
-    for (let k = 0; k < n; k++){
-      const off = [sx * (k + 0.5) / n, sz * (k + 0.5) / n];
-      out.push({y0: k * t, y1: (k + 1) * t, ob: off, ot: off, ci: k});
+  function buildLayers(sx){
+    const out = [];
+    for (let k = 0; k < N2; k++){
+      const off = [sx * (k + 0.5) / N2, 0];
+      out.push({y0: k * D2, y1: (k + 1) * D2, ob: off, ot: off, ci: k});
     }
     return out;
   }
 
-  function draw2(v, sx, sz, showEdge){
+  function draw2(v, sx){
     const ctx = v.ctx, shape = SHAPES[m2.shape];
     ctx.setTransform(dpr(), 0, 0, dpr(), 0, 0);
     ctx.clearRect(0, 0, v.w, v.h);
     setupCam(v);
     drawGround(v, shape, false);
-    const layers = buildLayers(sx, sz);
-    const thin = m2.layers && m2.n > 14, vthin = m2.layers && m2.n > 50;
-    layers.forEach(L => drawLayer(v, shape, L, {thin, vthin, grid: false}));
+    buildLayers(sx).forEach(L => drawLayer(v, shape, L, {thin: true, vthin: true, grid: false}));
     // Markierungen
-    const p = shape.pts[shape.mark], h = m2.h;
-    const B = [p[0], 0, p[1]], T = [p[0] + sx, h, p[1] + sz], F = [T[0], 0, T[2]];
+    const p = shape.pts[shape.mark];
+    const B = [p[0], 0, p[1]], T = [p[0] + sx, H2, p[1]], F = [T[0], 0, T[2]];
     const pb = v.proj(B), pt = v.proj(T), pf = v.proj(F);
-    const slanted = Math.hypot(sx, sz) > 0.05;
+    const slanted = Math.abs(sx) > 0.05;
     if (slanted){
       line(ctx, pb, pt, '#c4543a', [], 2.5);
-      label(ctx, 's = ' + fmt(Math.hypot(sx, sz, h), 1) + ' cm', (pb[0] + pt[0]) / 2 - 48, (pb[1] + pt[1]) / 2 + 10, '#b03d24');
+      label(ctx, 's = ' + fmt(Math.hypot(sx, H2), 1) + ' cm', (pb[0] + pt[0]) / 2 - 48, (pb[1] + pt[1]) / 2 + 10, '#b03d24');
     }
     line(ctx, pt, pf, '#b98a14', [6, 4], 2.5);
-    label(ctx, 'h = ' + fmt(h, 1) + ' cm', (pt[0] + pf[0]) / 2 + (slanted ? 42 : -42), (pt[1] + pf[1]) / 2 + (slanted ? 24 : 0), '#8a6200');
+    label(ctx, 'h = ' + fmt(H2) + ' cm', (pt[0] + pf[0]) / 2 + (slanted ? 42 : -42), (pt[1] + pf[1]) / 2 + (slanted ? 24 : 0), '#8a6200');
+  }
+
+  function volText(){
+    const G = SHAPES[m2.shape].area, gd = G * D2;
+    return '<small>' + N2 + ' Schichten &times; (' + fmt(G) + ' cm&sup2; &middot; ' + fmt(D2) + ' cm) = ' + N2 + ' &times; ' + fmt(gd, 3) + ' cm&sup3;</small>' +
+           'V = G &middot; h = <span class="y">' + fmt(G) + ' cm&sup2; &middot; ' + fmt(H2) + ' cm = ' + fmt(G * H2) + ' cm&sup3;</span>';
   }
 
   function update2(){
-    const shape = SHAPES[m2.shape], G = shape.area, h = m2.h;
-    const s = Math.hypot(m2.sx, m2.sz, h);
-    $('#o-h').textContent = fmt(h, 1) + ' cm';
     $('#o-sx').textContent = fmt(m2.sx, 1) + ' cm';
-    $('#o-sz').textContent = fmt(m2.sz, 1) + ' cm';
-    $('#o-n').textContent = m2.n;
-    $('#s-n').disabled = !m2.layers;
-    const V = G * h;
-    const same = Math.hypot(m2.sx, m2.sz) < 0.05;
-    $('#tbl2').innerHTML =
-      '<tr><th></th><th>gerade</th><th>schief</th></tr>' +
-      '<tr><td>Grundfl&auml;che G</td><td class="eq">' + fmt(G) + ' cm&sup2;</td><td class="eq">' + fmt(G) + ' cm&sup2;</td></tr>' +
-      '<tr><td>H&ouml;he h</td><td class="eq">' + fmt(h, 1) + ' cm</td><td class="eq">' + fmt(h, 1) + ' cm</td></tr>' +
-      '<tr><td>Seitenkante s</td><td>' + fmt(h, 1) + ' cm</td><td class="' + (same ? '' : 'df') + '">' + fmt(s, 1) + ' cm</td></tr>' +
-      '<tr><td>Volumen V = G &middot; h</td><td class="eq">' + fmt(V) + ' cm&sup3;</td><td class="eq">' + fmt(V) + ' cm&sup3;</td></tr>';
-    $('#note2').innerHTML = same
-      ? 'Beide K&ouml;rper sind gerade. Tippe auf <b>&bdquo;Schieben&ldquo;</b> und beobachte die Tabelle.'
-      : 'Die Seitenkante wird <span class="c">l&auml;nger</span>, aber <span class="y">Grundfl&auml;che, H&ouml;he und Volumen</span> bleiben gleich.';
+    $('#volA').innerHTML = volText();
+    $('#volB').innerHTML = volText();
+    $('#note2').innerHTML = Math.abs(m2.sx) < 0.05
+      ? 'Beide K&ouml;rper sind gerade. Tippe auf <b>&bdquo;Schieben&ldquo;</b> oder ziehe den Regler &mdash; und achte auf das Volumen.'
+      : 'Die Seitenkante wird <span class="c">l&auml;nger</span>, aber die Schichten bleiben gleich &mdash; das <span class="y">Volumen bleibt gleich</span>.';
     dirty = true;
   }
 
-  const bind = (id, key, num) => {
-    $(id).oninput = e => { stopPush(); m2[key] = num ? +e.target.value : e.target.checked; update2(); };
-  };
-  bind('#s-h', 'h', true); bind('#s-sx', 'sx', true); bind('#s-sz', 'sz', true); bind('#s-n', 'n', true);
-  $('#layers2').onchange = e => { m2.layers = e.target.checked; update2(); };
-
-  function syncSliders(){ $('#s-sx').value = m2.sx; $('#s-sz').value = m2.sz; }
+  $('#s-sx').oninput = e => { stopPush(); m2.sx = +e.target.value; update2(); };
+  function syncSliders(){ $('#s-sx').value = m2.sx; }
   function stopPush(){ m2.anim = false; $('#push').innerHTML = '&#9654; Schieben'; }
   $('#push').onclick = () => {
     if (m2.anim){ stopPush(); return; }
@@ -648,7 +619,6 @@
     lastT = 0;
     $('#push').innerHTML = '&#9632; Stopp';
   };
-  $('#straight').onclick = () => { stopPush(); m2.sx = 0; m2.sz = 0; syncSliders(); update2(); };
   $('#whyBtn').onclick = () => {
     const on = $('#why').classList.toggle('on');
     $('#whyBtn').textContent = on ? 'Erklärung verbergen' : 'Warum ist das so?';
@@ -707,8 +677,8 @@
     if (tab === 'gerade'){
       if (dirty){ draw1(); dirty = false; }
     } else if (dirty){
-      draw2(vA, 0, 0, false);
-      draw2(vB, m2.sx, m2.sz, true);
+      draw2(vA, 0);
+      draw2(vB, m2.sx);
       dirty = false;
     }
     requestAnimationFrame(frame);
