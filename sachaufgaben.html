@@ -317,6 +317,7 @@ function render(){
   h+='<div class="top"><p class="sub" style="margin:0">Stelle zu jeder Sachaufgabe eine Gleichung oder Ungleichung auf und löse sie. Erst wenn du eine Aufgabe abgeschlossen hast, wird die nächste frei.</p>';
   h+='<div class="coins" title="Gesammelte Münzen">🪙 '+totalCoins()+' / '+(N*3)+'</div></div>';
   h+=mapHTML();
+  h+='<div style="margin:-6px 0 14px"><button class="btn ghost" id="wipe" style="padding:7px 14px;font-size:.85rem">🗑 Spielstand löschen</button></div>';
 
   if(view>=N){ h+=finalHTML(); app.innerHTML=h; bind(); return; }
 
@@ -391,7 +392,9 @@ function bind(){
   const c=$('chk'); if(c) c.addEventListener('click',check);
   app.querySelectorAll('.ans input').forEach(inp=>inp.addEventListener('keydown',e=>{ if(e.key==='Enter') check(); }));
   const n=$('next'); if(n) n.addEventListener('click',()=>{ view=firstOpen(); resetSt(); render(); window.scrollTo({top:0,behavior:'smooth'}); });
-  const r=$('reset'); if(r) r.addEventListener('click',()=>{ if(confirm('Wirklich alles zurücksetzen? Deine Münzen gehen verloren.')){ prog={}; save(); view=0; resetSt(); render(); } });
+  const wipe=()=>{ if(confirm('Spielstand wirklich löschen? Alle Münzen und der Fortschritt gehen verloren.')){ prog={}; try{ localStorage.removeItem(KEY); }catch(e){} view=0; resetSt(); render(); window.scrollTo({top:0}); } };
+  const r=$('reset'); if(r) r.addEventListener('click',wipe);
+  const w=$('wipe'); if(w) w.addEventListener('click',wipe);
 }
 
 function syncVals(){
